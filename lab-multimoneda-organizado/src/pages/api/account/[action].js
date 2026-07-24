@@ -147,6 +147,12 @@ async function handle({ request, params }) {
     });
   } catch (error) {
     console.error("LAB_CORE account API unavailable:", error);
+    if (action === "forgot-password") {
+      return respond({
+        ok: true,
+        message: "If an account matches that email, a recovery link will be sent.",
+      });
+    }
     if (action === "logout") {
       return respond({ ok: true, session_revoked: false });
     }
