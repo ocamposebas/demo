@@ -152,6 +152,25 @@ a {
 }
 
 /* Checkout: keep the brand, remove the dashboard-like visual noise. */
+.traditional-checkout {
+  width: 100%;
+  max-width: 100vw;
+}
+
+.traditional-checkout form,
+.traditional-checkout aside,
+.traditional-checkout section,
+.traditional-checkout article {
+  min-width: 0;
+}
+
+.traditional-checkout input,
+.traditional-checkout select,
+.traditional-checkout textarea,
+.traditional-checkout button {
+  max-width: 100%;
+}
+
 .traditional-checkout .checkout-intro {
   padding: 0;
   border: 0;
@@ -252,6 +271,13 @@ a {
   .traditional-checkout form > section,
   .traditional-checkout #order-review > div {
     border-radius: 0.875rem;
+  }
+
+  .traditional-checkout button[form="lab-checkout-form"] {
+    padding-inline: 1rem;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
   }
 }
 

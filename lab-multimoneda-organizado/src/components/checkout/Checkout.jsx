@@ -88,6 +88,48 @@ const AmexLogo = () => (
   </PaymentLogoBadge>
 );
 
+const DinersLogo = () => (
+  <PaymentLogoBadge>
+    <span className="rounded-md border border-blue-300/25 bg-blue-400/[0.08] px-2 py-1 font-mono text-[8px] font-black text-blue-100">
+      DINERS
+    </span>
+  </PaymentLogoBadge>
+);
+
+const DiscoverLogo = () => (
+  <PaymentLogoBadge>
+    <span className="font-mono text-[8px] font-black tracking-[-0.04em] text-slate-100">
+      DISC<span className="text-orange-400">O</span>VER
+    </span>
+  </PaymentLogoBadge>
+);
+
+const CodensaLogo = () => (
+  <PaymentLogoBadge>
+    <span className="skew-x-[-8deg] rounded bg-[#ffd43b] px-2 py-1 font-mono text-[7px] font-black text-[#15204b]">
+      CODENSA
+    </span>
+  </PaymentLogoBadge>
+);
+
+const BancolombiaLogo = () => (
+  <PaymentLogoBadge className="justify-start gap-2.5">
+    <span className="flex h-7 w-7 rotate-[-8deg] items-center justify-center rounded-lg bg-[#ffe600] text-[#171717]">
+      <Landmark size={14} strokeWidth={2.5} />
+    </span>
+    <span className="truncate text-[9px] font-bold text-slate-100">Bancolombia</span>
+  </PaymentLogoBadge>
+);
+
+const NequiLogo = () => (
+  <PaymentLogoBadge className="justify-start gap-2.5">
+    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white font-black text-[#5f164f]">
+      N
+    </span>
+    <span className="text-[10px] font-bold text-slate-100">Nequi</span>
+  </PaymentLogoBadge>
+);
+
 const PseLogo = () => (
   <PaymentLogoBadge className="justify-start gap-2.5">
     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-300/[0.08] text-cyan-300">
@@ -770,8 +812,8 @@ export default function Checkout() {
   }
 
   return (
-    <main className="traditional-checkout relative px-4 pb-20 pt-[var(--lab-mobile-page-top)] sm:px-6 sm:pt-[9rem] lg:px-8 lg:pt-[9.5rem]">
-      <div className="mx-auto max-w-[1120px]">
+    <main className="traditional-checkout relative overflow-x-clip px-4 pb-20 pt-[var(--lab-mobile-page-top)] sm:px-6 sm:pt-[9rem] lg:px-8 lg:pt-[9.5rem]">
+      <div className="mx-auto w-full max-w-[1180px]">
         <div className="checkout-intro mb-7">
           <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
@@ -824,13 +866,13 @@ export default function Checkout() {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start">
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:items-start">
           <form
             ref={formRef}
             id="lab-checkout-form"
             onSubmit={submitCheckout}
             onChange={resetPreparedPayment}
-            className="order-1 grid gap-4"
+            className="order-1 grid min-w-0 gap-4"
           >
             <SectionCard
               icon={CircleUserRound}
@@ -1132,7 +1174,7 @@ export default function Checkout() {
             </a>
           </form>
 
-          <aside id="order-review" className="lab-scroll-target order-2 lg:sticky lg:top-24">
+          <aside id="order-review" className="lab-scroll-target order-2 min-w-0 lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-[28px] border border-cyan-300/16 bg-[#040d1e] shadow-[0_16px_46px_rgba(2,8,23,0.34)]">
               <div className="border-b border-white/[0.075] px-4 py-5 sm:px-5 sm:py-6">
                 <div className="flex items-center justify-between gap-4">
@@ -1525,13 +1567,31 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  <div className="p-3">
-                    <div className={`grid grid-cols-2 gap-2 ${currency === "COP" ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+                  <div className="p-3 sm:p-4">
+                    <p className="mb-2 font-mono text-[7px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                      {language === "es" ? "Tarjetas aceptadas" : "Accepted cards"}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       <VisaLogo />
                       <MastercardLogo />
                       <AmexLogo />
-                      {currency === "COP" && <PseLogo />}
+                      <DinersLogo />
+                      <DiscoverLogo />
+                      <CodensaLogo />
                     </div>
+
+                    {currency === "COP" && (
+                      <>
+                        <p className="mb-2 mt-4 font-mono text-[7px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                          {language === "es" ? "Bancos y billeteras" : "Banks and wallets"}
+                        </p>
+                        <div className="grid grid-cols-1 gap-2 min-[390px]:grid-cols-2">
+                          <BancolombiaLogo />
+                          <NequiLogo />
+                          <PseLogo />
+                        </div>
+                      </>
+                    )}
 
                     <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/[0.07] bg-[#020617]/75 px-3 py-2.5">
                       <div className="flex items-center gap-2">
