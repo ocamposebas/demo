@@ -766,27 +766,30 @@ class LAB_Core_Accounts_REST {
 			: 'Solo para investigación de laboratorio · No apto para uso humano ni veterinario.';
 		$highlight = '';
 		if ( $highlight_title || $highlight_value ) {
-			$highlight = '<div style="margin:28px 0;padding:22px;border:1px solid #164e63;background:#071526;text-align:center;">'
+			$highlight = '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#071526" style="margin:24px 0;background-color:#071526;background-image:linear-gradient(#071526,#071526);border:1px solid #164e63;"><tr><td align="center" bgcolor="#071526" style="padding:20px;background-color:#071526;">'
 				. '<div style="font-size:11px;line-height:18px;letter-spacing:1.5px;color:#67e8f9;font-weight:700;">' . esc_html( $highlight_title ) . '</div>'
-				. ( $highlight_value ? '<div style="margin-top:10px;font-family:Consolas,Monaco,monospace;font-size:26px;line-height:34px;letter-spacing:2px;color:#ffffff;font-weight:800;">' . esc_html( $highlight_value ) . '</div>' : '' )
-				. '</div>';
+				. ( $highlight_value ? '<div style="margin-top:8px;font-family:Consolas,Monaco,monospace;font-size:25px;line-height:32px;letter-spacing:2px;color:#eefcff;font-weight:800;">' . esc_html( $highlight_value ) . '</div>' : '' )
+				. '</td></tr></table>';
 		}
 
-		return '<!doctype html><html><body style="margin:0;padding:0;background:#020617;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;">'
-			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#020617;"><tr><td align="center" style="padding:28px 12px;">'
-			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;border:1px solid #164e63;background:#040c1c;">'
-			. '<tr><td style="height:4px;background:#67e8f9;font-size:0;">&nbsp;</td></tr>'
-			. '<tr><td style="padding:28px 34px 18px;border-bottom:1px solid #10283d;">'
-			. '<div style="font-size:21px;line-height:28px;letter-spacing:2px;color:#ffffff;font-weight:800;">LAB_<span style="color:#67e8f9;">CORE</span></div>'
+		return '<!doctype html><html style="color-scheme:dark only;supported-color-schemes:dark;"><head>'
+			. '<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark only"><meta name="supported-color-schemes" content="dark">'
+			. '<style>:root{color-scheme:dark only;supported-color-schemes:dark}html,body{margin:0!important;padding:0!important;width:100%!important;background:#020617!important}table,td{border-collapse:collapse}a{color:#67e8f9}@media(max-width:620px){.lc-pad{padding:26px 20px!important}.lc-head{padding:22px 20px!important}.lc-foot{padding:18px 20px!important}.lc-title{font-size:24px!important;line-height:31px!important}}</style>'
+			. '</head><body bgcolor="#020617" style="margin:0!important;padding:0!important;width:100%!important;background-color:#020617!important;background-image:linear-gradient(#020617,#020617)!important;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;">'
+			. '<table role="presentation" width="100%" height="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#020617" style="width:100%;min-width:100%;background-color:#020617;background-image:linear-gradient(#020617,#020617);"><tr><td align="center" valign="top" bgcolor="#020617" style="padding:0;background-color:#020617;">'
+			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#040c1c" style="width:100%;max-width:720px;background-color:#040c1c;background-image:linear-gradient(#040c1c,#040c1c);">'
+			. '<tr><td bgcolor="#67e8f9" style="height:4px;background-color:#67e8f9;font-size:0;line-height:4px;">&nbsp;</td></tr>'
+			. '<tr><td class="lc-head" bgcolor="#040c1c" style="padding:26px 32px 18px;border-bottom:1px solid #10283d;background-color:#040c1c;">'
+			. '<div style="font-size:21px;line-height:28px;letter-spacing:2px;color:#eefcff;font-weight:800;">LAB_<span style="color:#67e8f9;">CORE</span></div>'
 			. '<div style="margin-top:8px;font-size:10px;line-height:16px;letter-spacing:1.8px;color:#22d3ee;font-weight:700;">' . esc_html( $eyebrow ) . '</div>'
-			. '</td></tr><tr><td style="padding:34px;">'
-			. '<h1 style="margin:0;font-size:28px;line-height:36px;color:#ffffff;font-weight:800;">' . esc_html( $title ) . '</h1>'
+			. '</td></tr><tr><td class="lc-pad" bgcolor="#040c1c" style="padding:32px;background-color:#040c1c;">'
+			. '<h1 class="lc-title" style="margin:0;font-size:28px;line-height:36px;color:#eefcff;font-weight:800;">' . esc_html( $title ) . '</h1>'
 			. '<p style="margin:18px 0 0;font-size:15px;line-height:25px;color:#a8b6cc;">' . esc_html( $intro ) . '</p>'
 			. $highlight
-			. '<div style="margin:30px 0;text-align:center;"><a href="' . $safe_url . '" style="display:inline-block;padding:15px 24px;background:#67e8f9;color:#020617;text-decoration:none;font-size:13px;line-height:18px;font-weight:800;letter-spacing:.6px;">' . esc_html( $button_label ) . '</a></div>'
-			. ( $note ? '<p style="margin:22px 0 0;padding:16px;border-left:3px solid #164e63;background:#06101f;font-size:12px;line-height:20px;color:#8090a7;">' . esc_html( $note ) . '</p>' : '' )
+			. '<table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:28px auto;"><tr><td bgcolor="#67e8f9" style="background-color:#67e8f9;"><a href="' . $safe_url . '" style="display:inline-block;padding:15px 24px;color:#020617;text-decoration:none;font-size:13px;line-height:18px;font-weight:800;letter-spacing:.6px;">' . esc_html( $button_label ) . '</a></td></tr></table>'
+			. ( $note ? '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" bgcolor="#06101f" style="background-color:#06101f;background-image:linear-gradient(#06101f,#06101f);border-left:3px solid #164e63;"><tr><td bgcolor="#06101f" style="padding:15px;background-color:#06101f;font-size:12px;line-height:20px;color:#8090a7;">' . esc_html( $note ) . '</td></tr></table>' : '' )
 			. '<p style="margin:24px 0 0;font-size:11px;line-height:18px;color:#64748b;">' . esc_html( $fallback ) . '<br><a href="' . $safe_url . '" style="color:#67e8f9;word-break:break-all;">' . esc_html( $button_url ) . '</a></p>'
-			. '</td></tr><tr><td style="padding:20px 34px;border-top:1px solid #10283d;font-size:10px;line-height:17px;color:#64748b;">'
+			. '</td></tr><tr><td class="lc-foot" bgcolor="#030916" style="padding:18px 32px;border-top:1px solid #10283d;background-color:#030916;font-size:10px;line-height:17px;color:#64748b;">'
 			. 'LAB_CORE · <a href="mailto:info@labcorepep.com" style="color:#67e8f9;text-decoration:none;">info@labcorepep.com</a><br>' . esc_html( $compliance )
 			. '</td></tr></table></td></tr></table></body></html>';
 	}

@@ -162,6 +162,17 @@ async function handle({ request, params }) {
       : { ok: false, code: "INVALID_UPSTREAM_RESPONSE" };
   }
 
+  // Password recovery must never disclose whether an account exists. Once
+  // WordPress received the request, always show the same confirmation. This
+  // also avoids false negatives when a mail transport adds warnings after
+  // successfully accepting the message.
+  if (action === "forgot-password") {
+    return respond({
+      ok: true,
+      message: "If an account matches that email, a recovery link will be sent.",
+    });
+  }
+
   if (
     upstream.status === 404 &&
     ["rest_no_route", "INVALID_UPSTREAM_RESPONSE"].includes(payload?.code)
