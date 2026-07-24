@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /checkout
+Disallow: /cuenta
+
+Sitemap: https://labcorepep.com/sitemap.xml

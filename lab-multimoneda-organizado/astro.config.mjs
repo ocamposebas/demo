@@ -3,6 +3,7 @@ import react from "@astrojs/react";
 import node from "@astrojs/node";
 
 export default defineConfig({
+  site: "https://labcorepep.com",
   output: "server",
 
   adapter: node({
