@@ -48,7 +48,7 @@ class LAB_Core_Accounts_Admin {
 			array(
 				'type'              => 'string',
 				'sanitize_callback' => array( __CLASS__, 'sanitize_url' ),
-				'default'           => home_url( '/' ),
+				'default'           => 'https://labcorepep.com/',
 			)
 		);
 		register_setting(
@@ -108,7 +108,7 @@ class LAB_Core_Accounts_Admin {
 
 	public static function sanitize_url( $value ) {
 		$url = esc_url_raw( trim( (string) $value ) );
-		return $url ? trailingslashit( $url ) : home_url( '/' );
+		return $url ? trailingslashit( $url ) : 'https://labcorepep.com/';
 	}
 
 	public static function sanitize_origins( $value ) {
@@ -167,7 +167,7 @@ class LAB_Core_Accounts_Admin {
 					<tr>
 						<th scope="row"><label for="lab_core_accounts_frontend_url"><?php esc_html_e( 'Storefront URL', 'lab-core-accounts' ); ?></label></th>
 						<td>
-							<input class="regular-text" type="url" id="lab_core_accounts_frontend_url" name="lab_core_accounts_frontend_url" value="<?php echo esc_attr( get_option( 'lab_core_accounts_frontend_url', home_url( '/' ) ) ); ?>" required />
+							<input class="regular-text" type="url" id="lab_core_accounts_frontend_url" name="lab_core_accounts_frontend_url" value="<?php echo esc_attr( get_option( 'lab_core_accounts_frontend_url', 'https://labcorepep.com/' ) ); ?>" required />
 							<p class="description"><?php esc_html_e( 'Public Astro site root. Password recovery links point to /cuenta on this domain.', 'lab-core-accounts' ); ?></p>
 						</td>
 					</tr>

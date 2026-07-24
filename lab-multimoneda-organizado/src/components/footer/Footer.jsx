@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Calendar, Check, ChevronRight, Folder, LoaderCircle, Mail, ShieldAlert } from "lucide-react";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
@@ -45,6 +45,24 @@ export default function Footer() {
   const [newsletterStatus, setNewsletterStatus] = useState("idle");
   const [newsletterMessage, setNewsletterMessage] = useState("");
 
+  useEffect(() => {
+    const markSubscribed = (event) => {
+      const subscribedEmail = String(event?.detail?.email || "");
+      if (subscribedEmail) setEmail(subscribedEmail);
+      setNewsletterStatus("success");
+      setNewsletterMessage(newsletter.existing);
+    };
+
+    try {
+      if (window.localStorage.getItem("lab_rewards_popup_subscribed") === "true") {
+        markSubscribed();
+      }
+    } catch {}
+
+    window.addEventListener("lab:newsletter-subscribed", markSubscribed);
+    return () => window.removeEventListener("lab:newsletter-subscribed", markSubscribed);
+  }, [newsletter.existing]);
+
   const submitNewsletter = async (event) => {
     event.preventDefault();
     const normalizedEmail = email.trim();
@@ -86,13 +104,25 @@ export default function Footer() {
       } catch {}
     } catch (error) {
       setNewsletterStatus("error");
-      setNewsletterMessage(
-        error?.message === "NOT_CONFIGURED"
-          ? language === "es"
+      const messages = {
+        NOT_CONFIGURED:
+          language === "es"
             ? "El servicio de suscripción se está configurando. Inténtalo nuevamente en unos minutos."
-            : "The subscription service is being configured. Please try again in a few minutes."
-          : newsletter.error,
-      );
+            : "The subscription service is being configured. Please try again in a few minutes.",
+        RATE_LIMITED:
+          language === "es"
+            ? "Ya recibimos varios intentos. Espera un minuto antes de volver a probar."
+            : "We received several attempts. Wait a minute before trying again.",
+        PROVIDER_ERROR:
+          language === "es"
+            ? "Omnisend rechazó temporalmente la solicitud. Revisa el correo e inténtalo nuevamente."
+            : "Omnisend temporarily rejected the request. Check the email and try again.",
+        PROVIDER_UNAVAILABLE:
+          language === "es"
+            ? "Omnisend no está disponible temporalmente. Inténtalo en unos minutos."
+            : "Omnisend is temporarily unavailable. Try again in a few minutes.",
+      };
+      setNewsletterMessage(messages[error?.message] || newsletter.error);
     }
   };
 

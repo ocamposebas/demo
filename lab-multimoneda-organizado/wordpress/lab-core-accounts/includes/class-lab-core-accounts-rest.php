@@ -646,22 +646,34 @@ class LAB_Core_Accounts_REST {
 			$message = "Hello {$user->first_name},\n\nYour LAB_CORE account is now active.";
 			if ( is_array( $discount ) ) {
 				$message .= "\n\nYour personal {$discount['percent']}% welcome code is: {$discount['code']}";
+				$message .= "\nValid until: " . wp_date( get_option( 'date_format' ), strtotime( $discount['expires_at'] ) );
 			}
+			$message .= "\n\nSign in and use your code at checkout:\nhttps://labcorepep.com/cuenta";
 			$message .= "\n\nResearch use only. Not for human or veterinary use.";
 		} else {
 			$subject = 'Tu cuenta LAB_CORE está lista';
 			$message = "Hola {$user->first_name},\n\nTu cuenta LAB_CORE ya está activa.";
 			if ( is_array( $discount ) ) {
 				$message .= "\n\nTu código personal de bienvenida del {$discount['percent']}% es: {$discount['code']}";
+				$message .= "\nVálido hasta: " . wp_date( get_option( 'date_format' ), strtotime( $discount['expires_at'] ) );
 			}
+			$message .= "\n\nInicia sesión y usa tu código en el checkout:\nhttps://labcorepep.com/cuenta";
 			$message .= "\n\nSolo para investigación. No apto para uso humano ni veterinario.";
 		}
 
-		wp_mail( $user->user_email, $subject, $message );
+		$sent = wp_mail(
+			$user->user_email,
+			$subject,
+			$message,
+			array( 'From: LAB_CORE <info@labcorepep.com>' )
+		);
+		if ( ! $sent ) {
+			error_log( 'LAB_CORE Accounts could not hand the welcome email to wp_mail().' );
+		}
 	}
 
 	private static function send_reset_email( $user, $key, $language ) {
-		$frontend = esc_url_raw( get_option( 'lab_core_accounts_frontend_url', home_url( '/' ) ) );
+		$frontend = 'https://labcorepep.com/';
 		$url      = add_query_arg(
 			array(
 				'view'  => 'reset',
@@ -673,13 +685,18 @@ class LAB_Core_Accounts_REST {
 
 		if ( 'en' === $language ) {
 			$subject = 'Reset your LAB_CORE password';
-			$message = "A password reset was requested for your LAB_CORE account.\n\nCreate a new password here:\n{$url}\n\nIf you did not request this, you can ignore this email.";
+			$message = "A password reset was requested for your LAB_CORE account.\n\nThis link is unique and stops working after it is used or expires.\n\nCreate a new password here:\n{$url}\n\nIf you did not request this, you can ignore this email.";
 		} else {
 			$subject = 'Restablece tu contraseña de LAB_CORE';
-			$message = "Recibimos una solicitud para restablecer la contraseña de tu cuenta LAB_CORE.\n\nCrea una contraseña nueva aquí:\n{$url}\n\nSi no hiciste esta solicitud, puedes ignorar este correo.";
+			$message = "Recibimos una solicitud para restablecer la contraseña de tu cuenta LAB_CORE.\n\nEste enlace es único y dejará de funcionar después de usarlo o cuando expire.\n\nCrea una contraseña nueva aquí:\n{$url}\n\nSi no hiciste esta solicitud, puedes ignorar este correo.";
 		}
 
-		$sent = wp_mail( $user->user_email, $subject, $message );
+		$sent = wp_mail(
+			$user->user_email,
+			$subject,
+			$message,
+			array( 'From: LAB_CORE <info@labcorepep.com>' )
+		);
 		if ( ! $sent ) {
 			error_log( 'LAB_CORE Accounts could not hand the password reset email to wp_mail().' );
 		}

@@ -4,7 +4,7 @@ Tags: customer accounts, woocommerce, rest api, password reset
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -31,7 +31,7 @@ The Astro storefront should call the plugin through its same-origin /api/account
 1. Upload lab-core-accounts.zip in Plugins > Add New > Upload Plugin.
 2. Activate LAB_CORE Accounts.
 3. Open Settings > LAB_CORE Accounts.
-4. Set Storefront URL to the public Astro site, for example https://labcore.co/.
+4. Set Storefront URL to the public Astro site: https://labcorepep.com/.
 5. On Astro/Vercel, set WORDPRESS_API_URL to the WordPress site root. If omitted, the storefront falls back to WOOCOMMERCE_URL.
 6. Configure HTTPS and a reliable WordPress SMTP provider.
 7. Test registration, login, password recovery, and order history with a non-administrator customer account.
@@ -68,6 +68,11 @@ The raw token is returned only when a session is created. Storefront application
 * wp_mail() accepting a message does not guarantee delivery. Configure and monitor SMTP separately.
 
 == Changelog ==
+
+= 1.0.7 =
+* Send the personal welcome coupon, expiration date, and account link in the registration email.
+* Send unique native WordPress password recovery links exclusively to https://labcorepep.com/cuenta.
+* Send account emails from info@labcorepep.com and log wp_mail handoff failures.
 
 = 1.0.6 =
 * Allow registered customers to track their orders with their current account email while retaining billing-email support for guest and historical orders.

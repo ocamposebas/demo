@@ -205,16 +205,29 @@ export default function RewardsSignupPopup() {
       if (!response.ok || !payload?.ok) throw new Error(payload?.code || "SUBSCRIPTION_FAILED");
 
       safeStorageSet(SUBSCRIBED_KEY, "true");
+      window.dispatchEvent(
+        new CustomEvent("lab:newsletter-subscribed", {
+          detail: { email: email.trim().toLowerCase() },
+        }),
+      );
       setStatus(payload.new_subscriber ? "success" : "existing");
     } catch (error) {
       setStatus("error");
-      setMessage(
-        error?.message === "NOT_CONFIGURED"
-          ? language === "es"
+      const messages = {
+        NOT_CONFIGURED:
+          language === "es"
             ? "El servicio de suscripción se está configurando. Inténtalo nuevamente en unos minutos."
-            : "The subscription service is being configured. Please try again in a few minutes."
-          : c.error,
-      );
+            : "The subscription service is being configured. Please try again in a few minutes.",
+        RATE_LIMITED:
+          language === "es"
+            ? "Ya recibimos varios intentos. Espera un minuto antes de volver a probar."
+            : "We received several attempts. Wait a minute before trying again.",
+        PROVIDER_UNAVAILABLE:
+          language === "es"
+            ? "Omnisend no está disponible temporalmente. Inténtalo en unos minutos."
+            : "Omnisend is temporarily unavailable. Try again in a few minutes.",
+      };
+      setMessage(messages[error?.message] || c.error);
     }
   };
 

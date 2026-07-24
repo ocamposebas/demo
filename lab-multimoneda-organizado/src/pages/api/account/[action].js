@@ -1,3 +1,5 @@
+import { isAllowedRequestOrigin } from "../../../lib/boldPayments.js";
+
 export const prerender = false;
 
 const COOKIE_NAME = "lab_core_session";
@@ -97,8 +99,7 @@ async function handle({ request, params }) {
   }
 
   if (!["GET", "HEAD"].includes(method)) {
-    const origin = request.headers.get("origin");
-    if (origin && origin !== new URL(request.url).origin) {
+    if (!isAllowedRequestOrigin(request)) {
       return respond({ ok: false, code: "ORIGIN_NOT_ALLOWED" }, 403);
     }
   }
