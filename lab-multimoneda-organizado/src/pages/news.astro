@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResourceExperience from "../components/shop/ResourceExperience.jsx";
+const canonical = new URL(Astro.url.pathname, Astro.url.origin).toString();
+---
+<BaseLayout title="Noticias del sistema | LAB_CORE" description="Actualizaciones operativas, de catálogo y documentación analítica de LAB_CORE." canonical={canonical}><ResourceExperience page="news" client:idle /></BaseLayout>

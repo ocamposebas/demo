@@ -1,0 +1,23 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CheckoutExperience from "../components/shop/CheckoutExperience.jsx";
+import "../styles/global.css";
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+---
+
+<BaseLayout
+  title="Secure Checkout | LAB_CORE"
+  description="Review your LAB_CORE research order and continue through our secure checkout flow."
+  canonical={canonicalURL}
+>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+    <meta property="og:type" content="website" />
+  </Fragment>
+
+  <CheckoutExperience client:load />
+</BaseLayout>

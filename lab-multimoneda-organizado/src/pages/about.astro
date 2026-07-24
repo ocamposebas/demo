@@ -1,0 +1,40 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import AboutExperience from "../components/shop/AboutExperience.jsx";
+import "../styles/global.css";
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+const seoTitle = "About LAB_CORE | US Research Standards Expanding Across LATAM";
+const seoDescription = "Discover the LAB_CORE story: US-origin research peptides, batch-specific analytical documentation, high-quality COA access, and expansion into Mexico and Colombia.";
+const aboutSchema = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  name: "About LAB_CORE",
+  description: seoDescription,
+  url: canonicalURL,
+  mainEntity: {
+    "@type": "Organization",
+    name: "LAB_CORE",
+    url: siteUrl,
+    description: "Research compound supplier focused on US-origin products, batch traceability, and analytical documentation for laboratory research.",
+    areaServed: ["United States", "Mexico", "Colombia"],
+  },
+};
+---
+
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  canonical={canonicalURL}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <script type="application/ld+json" set:html={JSON.stringify(aboutSchema)} />
+  </Fragment>
+
+  <AboutExperience client:idle />
+</BaseLayout>

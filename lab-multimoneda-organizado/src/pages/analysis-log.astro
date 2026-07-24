@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResourceExperience from "../components/shop/ResourceExperience.jsx";
+const canonical = new URL(Astro.url.pathname, Astro.url.origin).toString();
+---
+<BaseLayout title="Registro de análisis | LAB_CORE" description="Información sobre registros por lote, control documental y verificación de certificados de análisis." canonical={canonical}><ResourceExperience page="analysis-log" client:idle /></BaseLayout>

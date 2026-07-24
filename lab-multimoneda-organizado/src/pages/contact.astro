@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResourceExperience from "../components/shop/ResourceExperience.jsx";
+const canonical = new URL(Astro.url.pathname, Astro.url.origin).toString();
+---
+<BaseLayout title="Contacto y soporte | LAB_CORE" description="Canal oficial de LAB_CORE para soporte de pedidos, documentación técnica y consultas comerciales." canonical={canonical}><ResourceExperience page="contact" client:idle /></BaseLayout>

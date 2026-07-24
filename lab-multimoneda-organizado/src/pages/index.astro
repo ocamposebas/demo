@@ -1,0 +1,43 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ShopExperience from "../components/shop/ShopExperience.jsx";
+import "../styles/global.css";
+
+const WOO_URL = import.meta.env.WOOCOMMERCE_URL;
+const KEY = import.meta.env.WOOCOMMERCE_CONSUMER_KEY;
+const SECRET = import.meta.env.WOOCOMMERCE_CONSUMER_SECRET;
+
+let products = [];
+let productError = "";
+
+try {
+  const cleanUrl = WOO_URL.replace(/\/$/, "");
+  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&per_page=20&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,labcore_multicurrency`;
+
+  const token = Buffer.from(`${KEY}:${SECRET}`).toString("base64");
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      Authorization: `Basic ${token}`,
+      "User-Agent": "Astro WooCommerce Catalog",
+    },
+  });
+
+  if (response.ok) {
+    products = await response.json();
+  } else {
+    productError = `HTTP_${response.status}`;
+    console.error("WooCommerce catalog request failed:", response.status);
+  }
+} catch (error) {
+  productError = "CONNECTION_ERROR";
+  console.error("WooCommerce catalog request failed:", error);
+}
+---
+
+<BaseLayout title="LAB_CORE // Research Peptides & Analytical Compounds">
+  <ShopExperience products={products} productError={productError} client:load />
+</BaseLayout>

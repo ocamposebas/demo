@@ -1,0 +1,31 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import LegalExperience from "../shop/LegalExperience.jsx";
+
+const { documentType, title, description } = Astro.props;
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+const legalSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  name: title,
+  description,
+  url: canonicalURL,
+  dateModified: "2026-07-21",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "LAB_CORE",
+    url: siteUrl,
+  },
+};
+---
+
+<BaseLayout title={title} description={description} canonical={canonicalURL}>
+  <Fragment slot="head">
+    <meta property="og:type" content="website" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <script type="application/ld+json" set:html={JSON.stringify(legalSchema)} />
+  </Fragment>
+
+  <LegalExperience documentType={documentType} client:load />
+</BaseLayout>

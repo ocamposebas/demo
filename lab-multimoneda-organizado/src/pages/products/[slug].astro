@@ -1,0 +1,254 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ProductDetailExperience from "../../components/shop/ProductDetailExperience.jsx";
+import "../../styles/global.css";
+
+const WOO_URL = import.meta.env.WOOCOMMERCE_URL;
+const KEY = import.meta.env.WOOCOMMERCE_CONSUMER_KEY;
+const SECRET = import.meta.env.WOOCOMMERCE_CONSUMER_SECRET;
+const slug = String(Astro.params.slug || "").trim();
+
+let product = null;
+let variations = [];
+let featuredProducts = [];
+let pageStatus = "ready";
+
+const textFromHtml = (value = "") =>
+  String(value)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+try {
+  if (!WOO_URL || !KEY || !SECRET || !slug) {
+    throw new Error("Missing WooCommerce product configuration");
+  }
+
+  const cleanUrl = WOO_URL.replace(/\/$/, "");
+  const token = Buffer.from(`${KEY}:${SECRET}`).toString("base64");
+  const headers = {
+    Authorization: `Basic ${token}`,
+    "User-Agent": "Astro WooCommerce Product Detail",
+  };
+  const fields = [
+    "id",
+    "name",
+    "slug",
+    "type",
+    "price",
+    "regular_price",
+    "sale_price",
+    "labcore_multicurrency",
+    "images",
+    "stock_status",
+    "stock_quantity",
+    "categories",
+    "tags",
+    "attributes",
+    "short_description",
+    "description",
+    "sku",
+    "variations",
+    "cross_sell_ids",
+    "upsell_ids",
+  ].join(",");
+  const productUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&slug=${encodeURIComponent(slug)}&status=publish&_fields=${fields}`;
+  const response = await fetch(productUrl, {
+    signal: AbortSignal.timeout(8000),
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`WooCommerce product request failed: ${response.status}`);
+  }
+
+  const matches = await response.json();
+  const wooProduct = Array.isArray(matches) ? matches[0] : null;
+
+  if (!wooProduct) {
+    pageStatus = "notFound";
+    Astro.response.status = 404;
+  } else {
+    product = {
+      ...wooProduct,
+      shortDescriptionText: textFromHtml(wooProduct.short_description),
+      descriptionText: textFromHtml(wooProduct.description),
+      short_description: undefined,
+      description: undefined,
+    };
+
+    const featuredFields = [
+      "id",
+      "name",
+      "slug",
+      "type",
+      "variations",
+      "price",
+      "regular_price",
+      "sale_price",
+      "labcore_multicurrency",
+      "images",
+      "stock_status",
+      "attributes",
+      "sku",
+    ].join(",");
+    const featuredUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&exclude=${wooProduct.id}&per_page=100&orderby=date&order=desc&_fields=${featuredFields}`;
+    const featuredRequest = fetch(featuredUrl, {
+      signal: AbortSignal.timeout(8000),
+      headers,
+    }).catch((error) => {
+      console.error("WooCommerce featured products request failed:", error);
+      return null;
+    });
+
+    if (wooProduct.type === "variable" && wooProduct.variations?.length > 0) {
+      const variationFields = [
+        "id",
+        "price",
+        "regular_price",
+        "sale_price",
+        "labcore_multicurrency",
+        "stock_status",
+        "stock_quantity",
+        "image",
+        "attributes",
+        "sku",
+      ].join(",");
+      const variationsUrl = `${cleanUrl}/wp-json/wc/v3/products/${wooProduct.id}/variations?currency=USD&per_page=100&_fields=${variationFields}`;
+      const variationsResponse = await fetch(variationsUrl, {
+        signal: AbortSignal.timeout(8000),
+        headers,
+      });
+
+      if (variationsResponse.ok) {
+        const variationData = await variationsResponse.json();
+        variations = Array.isArray(variationData) ? variationData : [];
+      } else {
+        console.error(
+          "WooCommerce product variations request failed:",
+          variationsResponse.status
+        );
+      }
+    }
+
+    const featuredResponse = await featuredRequest;
+    if (featuredResponse?.ok) {
+      const featuredData = await featuredResponse.json();
+      featuredProducts = Array.isArray(featuredData) ? featuredData : [];
+
+      const currentName = String(wooProduct.name || "").toLowerCase();
+      const linkedIds = new Set([...(wooProduct.cross_sell_ids || []), ...(wooProduct.upsell_ids || [])].map(Number));
+      const fallbackPool = featuredProducts.filter((candidate) => {
+        const name = String(candidate?.name || "").toLowerCase();
+        return candidate.stock_status === "instock" && !/bac\s*water|bacteriostatic|bacteriostática|bacteriostatica/.test(name);
+      });
+      const fallbackCandidate = fallbackPool.length ? fallbackPool[Number(wooProduct.id) % fallbackPool.length] : null;
+      if (fallbackCandidate) fallbackCandidate.is_fallback_recommendation = true;
+      const recommendationCandidates = featuredProducts.filter((candidate) => {
+        const name = String(candidate?.name || "").toLowerCase();
+        const isBacWater = /bac\s*water|bacteriostatic|bacteriostática|bacteriostatica/.test(name);
+        const isRetaPair = /\breta\b|retatrutide/.test(currentName) && /ghk[\s-]*cu/.test(name);
+        return isBacWater || isRetaPair || linkedIds.has(Number(candidate.id)) || candidate.is_fallback_recommendation;
+      });
+
+      await Promise.all(recommendationCandidates.map(async (candidate) => {
+        if (candidate.type !== "variable" || !candidate.variations?.length) return;
+        const variationFields = ["id", "price", "regular_price", "sale_price", "labcore_multicurrency", "stock_status", "stock_quantity", "image", "attributes", "sku"].join(",");
+        const url = `${cleanUrl}/wp-json/wc/v3/products/${candidate.id}/variations?currency=USD&per_page=100&_fields=${variationFields}`;
+        try {
+          const variationResponse = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
+          if (variationResponse.ok) candidate.recommendation_variations = await variationResponse.json();
+        } catch (variationError) {
+          console.error("WooCommerce recommendation variations request failed:", candidate.id, variationError);
+        }
+      }));
+    } else if (featuredResponse) {
+      console.error(
+        "WooCommerce featured products request failed:",
+        featuredResponse.status
+      );
+    }
+  }
+} catch (error) {
+  pageStatus = "offline";
+  Astro.response.status = 503;
+  console.error("WooCommerce product detail request failed:", error);
+}
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+const seoTitle = product
+  ? `${product.name} | LAB_CORE Research Compounds`
+  : "Product Detail | LAB_CORE";
+const seoDescription =
+  product?.shortDescriptionText ||
+  product?.descriptionText ||
+  "Research compound profile, available presentations and batch information from LAB_CORE.";
+const seoImage = product?.images?.[0]?.src || `${siteUrl}/INICIO.png`;
+
+const productSchema = product
+  ? {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description: seoDescription,
+      image: product.images?.map((image) => image.src).filter(Boolean),
+      sku: product.sku || `LAB-${product.id}`,
+      url: canonicalURL,
+      offers:
+        variations.length > 0
+          ? variations.map((variation) => ({
+              "@type": "Offer",
+              priceCurrency: "USD",
+              price: variation.price || product.price || "0.00",
+              availability:
+                variation.stock_status === "instock"
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+              sku: variation.sku || product.sku || `LAB-${variation.id}`,
+              url: canonicalURL,
+            }))
+          : {
+              "@type": "Offer",
+              priceCurrency: "USD",
+              price: product.price || "0.00",
+              availability:
+                product.stock_status === "instock"
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+              url: canonicalURL,
+            },
+    }
+  : null;
+---
+
+<BaseLayout
+  title={seoTitle}
+  description={seoDescription}
+  canonical={canonicalURL}
+  image={seoImage}
+>
+  <Fragment slot="head">
+    <meta property="og:type" content="product" />
+    <meta name="robots" content={product ? "index, follow, max-image-preview:large" : "noindex, follow"} />
+    {productSchema && <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />}
+  </Fragment>
+
+  <ProductDetailExperience
+    product={product}
+    variations={variations}
+    featuredProducts={featuredProducts}
+    pageStatus={pageStatus}
+    client:load
+  />
+</BaseLayout>

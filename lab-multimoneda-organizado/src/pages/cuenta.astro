@@ -1,0 +1,22 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import AccountExperience from "../components/shop/AccountExperience.jsx";
+import "../styles/global.css";
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+---
+
+<BaseLayout
+  title="Mi cuenta | LAB_CORE"
+  description="Accede a tu cuenta LAB_CORE, administra tus datos y consulta tus pedidos de investigación."
+  canonical={canonicalURL}
+>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+  </Fragment>
+
+  <AccountExperience client:load />
+</BaseLayout>

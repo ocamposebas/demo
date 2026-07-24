@@ -1,0 +1,32 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PeptideInfoExperience from "../components/shop/PeptideInfoExperience.jsx";
+import "../styles/global.css";
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
+const seoTitle = "Peptide Information & Research Directory | LAB_CORE";
+const seoDescription = "A visual laboratory guide to peptide structure, synthesis, analytical quality, COA interpretation, and frequently researched peptides including BPC-157, MOTS-c, CJC-1295, and tesamorelin.";
+const guideSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: "LAB_CORE Peptide Information Guide",
+  description: seoDescription,
+  url: canonicalURL,
+  author: { "@type": "Organization", name: "LAB_CORE" },
+  publisher: { "@type": "Organization", name: "LAB_CORE" },
+  about: ["Peptide chemistry", "Peptide synthesis", "Certificates of Analysis", "HPLC", "LC-MS", "Research peptide directory", "Research quality"],
+};
+---
+
+<BaseLayout title={seoTitle} description={seoDescription} canonical={canonicalURL}>
+  <Fragment slot="head">
+    <meta property="og:type" content="article" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <script type="application/ld+json" set:html={JSON.stringify(guideSchema)} />
+  </Fragment>
+
+  <PeptideInfoExperience client:idle />
+</BaseLayout>

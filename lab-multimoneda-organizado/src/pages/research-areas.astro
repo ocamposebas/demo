@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResourceExperience from "../components/shop/ResourceExperience.jsx";
+const canonical = new URL(Astro.url.pathname, Astro.url.origin).toString();
+---
+<BaseLayout title="Áreas de investigación | LAB_CORE" description="Categorías científicas, alcance documental y principios de investigación responsable de LAB_CORE." canonical={canonical}><ResourceExperience page="research-areas" client:idle /></BaseLayout>

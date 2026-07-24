@@ -1,0 +1,101 @@
+---
+import '../styles/global.css';
+import AgeGate from '../components/ui/AgeGate.astro';
+
+const {
+  title = "LAB_CORE | Research Peptides & Analytical Compounds", 
+  description = "Research peptides and analytical compounds with clear product information, batch documentation and secure ordering.",
+  url,
+  canonical,
+  image = "/INICIO.png",
+} = Astro.props;
+
+const toSiteBase = (value) => {
+  if (!value) return null;
+  try {
+    const input = String(value).trim();
+    const parsed = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+    parsed.pathname = '/';
+    parsed.search = '';
+    parsed.hash = '';
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const isLoopback = (site) => ['localhost', '127.0.0.1', '::1'].includes(site?.hostname);
+const configuredSite = [
+  import.meta.env.PUBLIC_SITE_URL,
+  import.meta.env.SITE_URL,
+  Astro.site?.toString(),
+  url,
+]
+  .map(toSiteBase)
+  .find((site) => site && !isLoopback(site));
+const siteBase = configuredSite || new URL(Astro.url.origin);
+
+const toAbsoluteURL = (value, fallbackPath) => {
+  try {
+    const parsed = new URL(value || fallbackPath, siteBase);
+    if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Unsupported URL protocol');
+    return parsed;
+  } catch {
+    return new URL(fallbackPath, siteBase);
+  }
+};
+
+const requestedCanonicalURL = toAbsoluteURL(canonical, Astro.url.pathname);
+// Canonical URLs supplied by individual pages keep their path, while the
+// configured production origin remains the single source of truth.
+const canonicalURL = configuredSite
+  ? new URL(`${requestedCanonicalURL.pathname}${requestedCanonicalURL.search}`, siteBase)
+  : requestedCanonicalURL;
+canonicalURL.search = '';
+canonicalURL.hash = '';
+const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
+---
+
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL.toString()} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="LAB_CORE" />
+    <meta property="og:url" content={canonicalURL.toString()} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={socialImageURL.toString()} />
+    <meta property="og:image:alt" content="LAB_CORE research peptides" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content={canonicalURL.toString()} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImageURL.toString()} />
+    <meta name="twitter:image:alt" content="LAB_CORE research peptides" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Allura&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <slot name="head" />
+  </head>
+  
+  <body class="bg-[#020617] text-slate-300 min-h-screen overflow-x-hidden selection:bg-cyan-500 selection:text-black">
+    <AgeGate />
+    
+    <div class="fixed inset-0 z-[-1] opacity-20 pointer-events-none" 
+         style="background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 40px 40px;">
+    </div>
+    
+    <div class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-cyan-500/5 blur-[140px] rounded-full pointer-events-none"></div>
+
+    <slot />
+
+  </body>
+</html>

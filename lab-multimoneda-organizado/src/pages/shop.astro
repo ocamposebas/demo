@@ -1,0 +1,90 @@
+---
+export const prerender = false;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ShopPageExperience from "../components/shop/ShopPageExperience.jsx";
+import "../styles/global.css";
+
+const WOO_URL = import.meta.env.WOOCOMMERCE_URL;
+const KEY = import.meta.env.WOOCOMMERCE_CONSUMER_KEY;
+const SECRET = import.meta.env.WOOCOMMERCE_CONSUMER_SECRET;
+
+let products = [];
+let productError = "";
+
+try {
+  const cleanUrl = WOO_URL.replace(/\/$/, "");
+  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&per_page=100&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,categories,tags,attributes,short_description,sku,labcore_multicurrency`;
+
+  const token = Buffer.from(`${KEY}:${SECRET}`).toString("base64");
+
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(8000),
+    headers: {
+      Authorization: `Basic ${token}`,
+      "User-Agent": "Astro WooCommerce Shop",
+    },
+  });
+
+  if (response.ok) {
+    products = await response.json();
+  } else {
+    productError = `HTTP_${response.status}`;
+    console.error("WooCommerce shop request failed:", response.status);
+  }
+} catch (error) {
+  productError = "CONNECTION_ERROR";
+  console.error("WooCommerce shop request failed:", error);
+}
+
+const siteUrl = Astro.url.origin;
+const canonicalURL = new URL(Astro.url.pathname, siteUrl);
+
+const seoTitle = "Research Peptides & Analytical Compounds | LAB_CORE";
+const seoDescription = "Explore LAB_CORE research peptides and analytical compounds, available presentations, pricing and batch documentation.";
+
+const jsonLdSchema = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "LAB_CORE Research Peptides Catalog",
+  "description": seoDescription,
+  "url": canonicalURL.toString(),
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": products.length,
+    "itemListElement": products.map((product, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Product",
+        "name": product.name,
+        "description": product.short_description?.replace(/<[^>]*>/g, '') || `Premium research compound ${product.name}`,
+        "image": product.images?.[0]?.src || `${siteUrl}/INICIO.png`,
+        "url": `${siteUrl}/products/${product.slug}`,
+        "sku": product.sku || `LAB-${product.id}`,
+        "offers": {
+          "@type": "Offer",
+          "priceCurrency": "USD",
+          "price": product.price || "0.00",
+          "availability": product.stock_status === "instock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+        }
+      }
+    }))
+  }
+};
+---
+
+<BaseLayout 
+  title={seoTitle} 
+  description={seoDescription}
+  canonical={canonicalURL.toString()}
+  image="/INICIO.png"
+>
+  <Fragment slot="head">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLdSchema)} />
+  </Fragment>
+
+  <ShopPageExperience products={products} productError={productError} client:load />
+</BaseLayout>

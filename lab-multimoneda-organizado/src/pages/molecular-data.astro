@@ -1,0 +1,7 @@
+---
+export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ResourceExperience from "../components/shop/ResourceExperience.jsx";
+const canonical = new URL(Astro.url.pathname, Astro.url.origin).toString();
+---
+<BaseLayout title="Datos moleculares | LAB_CORE" description="Referencias para interpretar nomenclatura, propiedades reportadas y alcance de los datos moleculares." canonical={canonical}><ResourceExperience page="molecular-data" client:idle /></BaseLayout>

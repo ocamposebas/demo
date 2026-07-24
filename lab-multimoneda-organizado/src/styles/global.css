@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+@keyframes labHeaderIn {
+  from { opacity: 0; transform: translateY(-18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes labMenuIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes labDrawerIn {
+  from { opacity: 0.7; transform: translateX(100%); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes labFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes labFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes labFadeLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes labFadeScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes labMarkFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 0 0 rgba(34, 211, 238, 0));
+  }
+  50% {
+    transform: translateY(-3px) rotate(2deg);
+    filter: drop-shadow(0 5px 8px rgba(34, 211, 238, 0.28));
+  }
+}
+
+@keyframes labProgress {
+  from { width: 0; }
+  to { width: 99.8%; }
+}
+
+@keyframes labScan {
+  0%, 100% { transform: translateY(0); opacity: 0.25; }
+  50% { transform: translateY(450px); opacity: 0.75; }
+}
+
+:root {
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --lab-mobile-page-top: 11rem;
+  --lab-mobile-scroll-offset: 10rem;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #020617;
+}
+
+/*
+ * Keeps in-page destinations below the fixed announcement + navigation stack.
+ * The extra space is intentional breathing room on narrow screens.
+ */
+.lab-scroll-target {
+  scroll-margin-top: var(--lab-mobile-scroll-offset);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --lab-mobile-scroll-offset: 11rem;
+  }
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(6, 182, 212, 0.08), transparent 28rem),
+    radial-gradient(circle at 90% 35%, rgba(37, 99, 235, 0.06), transparent 24rem),
+    #020617;
+}
+
+.lab-line-clamp-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+button,
+a,
+input,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 2px solid #22d3ee;
+  outline-offset: 3px;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.85);
+  color: #020617;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 2px solid #020617;
+  background: rgba(34, 211, 238, 0.35);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.7);
+}
+
+/* Microcopy must remain readable on real mobile screens, not only in mockups. */
+.text-\[6px\],
+.text-\[7px\],
+.text-\[8px\] {
+  font-size: 10px !important;
+}
+
+.text-\[9px\] {
+  font-size: 11px !important;
+}
+
+/* Checkout: keep the brand, remove the dashboard-like visual noise. */
+.traditional-checkout .checkout-intro {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.traditional-checkout .checkout-intro > div {
+  display: block;
+}
+
+.traditional-checkout .checkout-kicker,
+.traditional-checkout .checkout-benefits,
+.traditional-checkout .checkout-progress {
+  display: none;
+}
+
+.traditional-checkout .checkout-title {
+  margin-top: 1rem;
+  max-width: 42rem;
+  font-family: inherit;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.traditional-checkout .checkout-description {
+  margin-top: 0.65rem;
+  max-width: 38rem;
+  font-family: inherit;
+  font-size: 0.875rem !important;
+  line-height: 1.55;
+}
+
+.traditional-checkout #order-review > div {
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.traditional-checkout form > section {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: #071225;
+}
+
+.traditional-checkout form > section > div:first-child {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.traditional-checkout form > section label {
+  font-family: inherit;
+}
+
+.traditional-checkout form > section input,
+.traditional-checkout form > section select,
+.traditional-checkout form > section textarea {
+  font-family: inherit;
+}
+
+.traditional-checkout #order-review article {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.traditional-checkout #order-review article:hover {
+  border-color: rgba(34, 211, 238, 0.16);
+}
+
+.traditional-checkout button[form="lab-checkout-form"] {
+  min-height: 3.5rem;
+  border-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem !important;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+@media (max-width: 1023px) {
+  .traditional-checkout #order-review > div > div:nth-child(2) {
+    max-height: 18rem;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 639px) {
+  .traditional-checkout {
+    padding-inline: 1rem;
+    padding-bottom: 4rem;
+  }
+
+  .traditional-checkout .checkout-description {
+    font-size: 0.8125rem !important;
+  }
+
+  .traditional-checkout form > section,
+  .traditional-checkout #order-review > div {
+    border-radius: 0.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
