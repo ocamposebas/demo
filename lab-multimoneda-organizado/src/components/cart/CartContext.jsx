@@ -1,5 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
+import {
+  identifyOmnisendContact,
+  identifyOmnisendContactWhenReady,
+  trackOmnisendEvent,
+} from "../../lib/omnisendClient.js";
 
 const CartContext = createContext(null);
 const CART_STORAGE_KEY = "lab_cart";
@@ -63,6 +68,76 @@ const normalizeCartItem = (item, fallbackQuantity = 1) => {
   return cartKey ? { ...normalized, cartKey } : null;
 };
 
+const absoluteStoreUrl = (value, fallbackPath = "/shop") => {
+  if (typeof window === "undefined") return "";
+  try {
+    return new URL(value || fallbackPath, window.location.origin).toString();
+  } catch {
+    return new URL(fallbackPath, window.location.origin).toString();
+  }
+};
+
+const omnisendLineItem = (item) => {
+  const imageUrl = absoluteStoreUrl(item?.images?.[0]?.src, "/tarro1.png");
+  const productUrl = absoluteStoreUrl(
+    item?.slug ? `/products/${encodeURIComponent(item.slug)}` : "/shop",
+  );
+  const categories = Array.isArray(item?.categories)
+    ? item.categories
+      .map((category) => ({
+        id: String(category?.id || category?.slug || "").trim(),
+        title: String(category?.name || category?.title || "").trim(),
+      }))
+      .filter((category) => category.id || category.title)
+    : [];
+  const line = {
+    productID: String(item?.id || ""),
+    productVariantID: String(item?.variationId || item?.id || ""),
+    productTitle: String(item?.name || "Producto de investigación LAB_CORE"),
+    productQuantity: Number(item?.quantity || 1),
+    productPrice: Number(item?.price || 0),
+    productURL: productUrl,
+    productImageURL: imageUrl,
+    productVariantImageURL: imageUrl,
+  };
+  if (item?.sku) line.productSKU = String(item.sku);
+  if (item?.description || item?.short_description) {
+    line.productDescription = String(item.description || item.short_description)
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
+  }
+  if (categories.length) line.productCategories = categories;
+  return line;
+};
+
+const createBrowserCartEvent = ({ cartId, currency, items, addedCartKey, email }) => {
+  const lineItems = items.map(omnisendLineItem);
+  const addedIndex = items.findIndex((item) => getCartKey(item) === addedCartKey);
+  const addedItem = lineItems[addedIndex >= 0 ? addedIndex : lineItems.length - 1];
+  const eventID = typeof globalThis.crypto?.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : `lab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+  return {
+    origin: "api",
+    eventVersion: "",
+    eventID,
+    properties: {
+      abandonedCheckoutURL: absoluteStoreUrl("/checkout"),
+      cartID: cartId,
+      currency,
+      lineItems,
+      ...(addedItem ? { addedItem } : {}),
+      value: Number(items.reduce(
+        (total, item) => total + Number(item?.price || 0) * Number(item?.quantity || 0),
+        0,
+      ).toFixed(2)),
+    },
+    ...(email ? { contact: { email } } : {}),
+  };
+};
+
 export function CartProvider({ children }) {
   const { currency, setCurrency } = useCurrency();
   const [cartItems, setCartItems] = useState([]);
@@ -78,6 +153,8 @@ export function CartProvider({ children }) {
   const cartHadItemsRef = useRef(false);
   const lastSyncedSignatureRef = useRef("");
   const lastCheckoutSignatureRef = useRef("");
+  const pendingBrowserCartEventRef = useRef(null);
+  const browserTrackedAddedKeyRef = useRef("");
 
   useEffect(() => {
     let active = true;
@@ -153,6 +230,11 @@ export function CartProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (!cartContactEmail) return undefined;
+    return identifyOmnisendContactWhenReady(cartContactEmail);
+  }, [cartContactEmail]);
+
+  useEffect(() => {
     const handleNewsletter = (event) => identifyCartContact(event?.detail?.email);
     const handleAccount = (event) => {
       const email = event?.detail?.user?.email;
@@ -174,11 +256,36 @@ export function CartProvider({ children }) {
   }, [identifyCartContact]);
 
   useEffect(() => {
+    const pending = pendingBrowserCartEventRef.current;
+    if (!cartReady || !pending || pending.action !== "added" || cartItems.length === 0) return;
+
+    const email = normalizeEmail(cartContactEmail);
+    if (!email) return;
+    identifyOmnisendContact(email);
+    const tracked = trackOmnisendEvent(
+      "added product to cart",
+      createBrowserCartEvent({
+        cartId,
+        currency,
+        items: cartItems,
+        addedCartKey: pending.addedCartKey,
+        email,
+      }),
+    );
+
+    if (tracked) {
+      browserTrackedAddedKeyRef.current = pending.addedCartKey;
+      pendingBrowserCartEventRef.current = null;
+    }
+  }, [cartItems, cartReady, cartId, cartContactEmail, currency]);
+
+  useEffect(() => {
     if (!cartReady || !cartId || !cartContactEmail) return undefined;
     if (cartItems.length === 0 && !cartHadItemsRef.current) return undefined;
 
     const action = cartItems.length === 0 ? "cleared" : cartActionRef.current;
     const addedCartKey = addedCartKeyRef.current;
+    const clientTracked = action === "added" && browserTrackedAddedKeyRef.current === addedCartKey;
     const signature = JSON.stringify({
       cartId,
       email: cartContactEmail,
@@ -203,6 +310,7 @@ export function CartProvider({ children }) {
             currency,
             action,
             addedCartKey,
+            clientTracked,
             items: cartItems.map((item) => ({
               productId: Number(item.id),
               variationId: Number(item.variationId || 0),
@@ -221,6 +329,7 @@ export function CartProvider({ children }) {
         cartHadItemsRef.current = cartItems.length > 0;
         cartActionRef.current = "updated";
         addedCartKeyRef.current = "";
+        if (clientTracked) browserTrackedAddedKeyRef.current = "";
       } catch (error) {
         if (error?.name !== "AbortError") {
           console.warn("Abandoned cart sync unavailable:", error?.message || error);
@@ -307,6 +416,10 @@ export function CartProvider({ children }) {
     if (!productWithKey) return;
     cartActionRef.current = "added";
     addedCartKeyRef.current = productWithKey.cartKey;
+    pendingBrowserCartEventRef.current = {
+      action: "added",
+      addedCartKey: productWithKey.cartKey,
+    };
 
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => getCartKey(item) === productWithKey.cartKey);
@@ -350,6 +463,17 @@ export function CartProvider({ children }) {
     if (signature === lastCheckoutSignatureRef.current) return true;
 
     try {
+      identifyOmnisendContact(email);
+      const clientTracked = trackOmnisendEvent(
+        "started checkout",
+        createBrowserCartEvent({
+          cartId,
+          currency,
+          items: cartItems,
+          addedCartKey: "",
+          email,
+        }),
+      );
       const response = await fetch("/api/marketing/cart", {
         method: "POST",
         credentials: "same-origin",
@@ -359,6 +483,7 @@ export function CartProvider({ children }) {
           email,
           currency,
           action: "started_checkout",
+          clientTracked,
           items: cartItems.map((item) => ({
             productId: Number(item.id),
             variationId: Number(item.variationId || 0),

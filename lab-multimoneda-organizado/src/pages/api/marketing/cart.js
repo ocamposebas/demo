@@ -82,7 +82,7 @@ export async function POST({ request }) {
     });
 
     let eventTracked = true;
-    if (["added", "started_checkout"].includes(payload?.action)) {
+    if (["added", "started_checkout"].includes(payload?.action) && payload?.clientTracked !== true) {
       const properties = createCartEventProperties({
         cartId,
         currency,
@@ -108,7 +108,13 @@ export async function POST({ request }) {
       }
     }
 
-    return json({ ok: true, cartId, recoveryUrl: recoveryUrlString, eventTracked });
+    return json({
+      ok: true,
+      cartId,
+      recoveryUrl: recoveryUrlString,
+      eventTracked,
+      eventSource: payload?.clientTracked === true ? "browser" : "server",
+    });
   } catch (error) {
     console.error(
       "Omnisend cart synchronization failed:",

@@ -672,21 +672,24 @@ export default function Account() {
   };
 
   const logout = async () => {
+    // Invalidate every session request that started before logout. Without this,
+    // a delayed /me response can restore the authenticated UI after sign-out.
+    sessionRequestRef.current++;
     setBusy(true);
+    setUser(null);
+    setOrders(null);
+    setOrderSummary(null);
+    setRewards(null);
+    setAuthState("guest");
+    setActivePanel("overview");
+    setView("login");
+    setFeedback(null);
+    broadcastAccountSession(null);
     try {
       await accountRequest("logout");
     } catch {
       // The proxy clears the local HttpOnly cookie even when WordPress is unavailable.
     } finally {
-      setUser(null);
-      setOrders(null);
-      setOrderSummary(null);
-      setRewards(null);
-      setAuthState("guest");
-      setActivePanel("overview");
-      setView("login");
-      setFeedback(null);
-      broadcastAccountSession(null);
       setBusy(false);
     }
   };

@@ -34,6 +34,9 @@ const json = (body, status = 200, headers = {}) =>
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store, private",
+      "Pragma": "no-cache",
+      "Expires": "0",
+      "Vary": "Cookie",
       ...headers,
     },
   });
@@ -189,6 +192,9 @@ async function handle({ request, params }) {
   const responseHeaders = {
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store, private",
+    "Pragma": "no-cache",
+    "Expires": "0",
+    "Vary": "Cookie",
   };
 
   if (upstream.ok && payload?.token) {

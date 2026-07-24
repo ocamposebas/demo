@@ -64,7 +64,9 @@ export default function HeaderPro() {
 
         if (!active || currentRequest !== requestId) return;
         setAccountUser(nextUser);
-        if (notify) {
+        // On the first authenticated page load, publish the session too so
+        // cart tracking can identify the Omnisend contact before any event.
+        if (notify || nextUser) {
           window.dispatchEvent(new CustomEvent("lab:account-session", {
             detail: { user: nextUser, preservePanel: true },
           }));
