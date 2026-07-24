@@ -584,15 +584,19 @@ export default function Account() {
 
   const submitForgot = async (event) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const data = new FormData(form);
     setBusy(true);
     setFeedback(null);
     try {
       await accountRequest("forgot-password", { body: { email: data.get("email"), language } });
       setFeedback({ type: "success", message: c.resetSent });
-      event.currentTarget.reset();
-    } catch (error) {
-      setFeedback({ type: "error", message: errorMessage(error) });
+      form.reset();
+    } catch {
+      // Recovery responses are intentionally neutral so the UI never reveals
+      // whether an account exists or replaces a delivered email with a false
+      // client-side error.
+      setFeedback({ type: "success", message: c.resetSent });
     } finally {
       setBusy(false);
     }
