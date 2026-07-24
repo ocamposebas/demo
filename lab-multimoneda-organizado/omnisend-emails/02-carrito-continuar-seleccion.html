@@ -1,0 +1,242 @@
+[% assign cart_items = event.raw.line_items | default: event.raw.lineItems | default: event.line_items | default: event.lineItems %]
+[% assign recovery_url = event.raw.abandonedCheckoutURL | default: event.raw.abandoned_checkout_url | default: event.abandonedCheckoutURL | default: event.abandoned_checkout_url | default: abandoned_cart.recover_url | default: 'https://labcorepep.com/cart' %]
+[% assign cart_currency = event.raw.currency | default: event.currency | default: 'USD' %]
+
+<!-- ASUNTO: ¿Continuamos? Tu carrito te espera -->
+<!-- PREHEADER: Tus productos siguen disponibles para continuar. -->
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">
+  Tus productos siguen disponibles para continuar.&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+</div>
+
+<style>
+  @media only screen and (max-width: 620px) {
+    .lab-shell { width: 100% !important; }
+    .lab-pad { padding-left: 20px !important; padding-right: 20px !important; }
+    .lab-title { font-size: 34px !important; line-height: 38px !important; }
+    .lab-product-image,
+    .lab-product-copy { display: block !important; width: auto !important; border-right: 0 !important; }
+    .lab-product-image { border-bottom: 1px solid #17324d !important; }
+    .lab-product-image img { width: 180px !important; max-width: 70% !important; }
+    .lab-trust { display: block !important; width: auto !important; border-right: 0 !important; border-bottom: 1px solid #17324d !important; }
+    .lab-trust-last { border-bottom: 0 !important; }
+    .lab-button { display: block !important; }
+  }
+</style>
+
+<table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#020617" style="width:100%;margin:0;background-color:#020617;border-collapse:collapse;color-scheme:dark;">
+  <tr>
+    <td align="center" style="padding:18px 8px 28px;">
+      <table class="lab-shell" role="presentation" width="600" border="0" cellspacing="0" cellpadding="0" bgcolor="#071426" style="width:100%;max-width:600px;background-color:#071426;border:1px solid #164e63;border-collapse:separate;border-spacing:0;border-radius:20px;overflow:hidden;">
+        <tr>
+          <td style="height:4px;line-height:4px;font-size:4px;background-color:#67e8f9;">&nbsp;</td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" style="padding:24px 34px 18px;background-color:#050d1b;border-bottom:1px solid #13283f;">
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td valign="middle">
+                  <a href="https://labcorepep.com/" style="text-decoration:none;">
+                    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:23px;line-height:26px;font-weight:900;letter-spacing:1.8px;color:#f8fafc;">
+                      LAB<span style="color:#67e8f9;">_CORE</span>
+                    </p>
+                    <p style="margin:4px 0 0;font-family:'Courier New',Courier,monospace;font-size:8px;line-height:11px;font-weight:700;letter-spacing:2.2px;color:#64748b;">
+                      INVESTIGACIÓN DE LABORATORIO
+                    </p>
+                  </a>
+                </td>
+                <td width="74" align="right" valign="middle">
+                  <span style="display:inline-block;padding:7px 9px;background-color:#0b1b31;border:1px solid #164e63;border-radius:999px;font-family:'Courier New',Courier,monospace;font-size:9px;line-height:11px;font-weight:700;letter-spacing:1px;color:#a5f3fc;">
+                    02/03
+                  </span>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" align="left" style="padding:34px 46px 8px;background-color:#071426;">
+            <span style="display:inline-block;padding:7px 10px;background-color:#083344;border:1px solid #155e75;border-radius:7px;font-family:'Courier New',Courier,monospace;font-size:9px;line-height:12px;font-weight:700;letter-spacing:1.2px;color:#a5f3fc;">
+              CARRITO GUARDADO // SECUENCIA 02 DE 03
+            </span>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" style="padding:17px 46px 0;background-color:#071426;">
+            <h1 class="lab-title" style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:42px;line-height:46px;font-weight:900;letter-spacing:-1.4px;color:#f8fafc;">
+              ¿Continuamos donde<br><span style="color:#67e8f9;">lo dejaste?</span>
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" style="padding:17px 46px 10px;background-color:#071426;">
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:24px;color:#cbd5e1;">
+              Hola [[ contact.first_name | default: 'investigador' ]], Tu selección sigue preparada. Puedes revisar los productos y continuar sin empezar de nuevo.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" style="padding:10px 46px 26px;background-color:#071426;">
+            <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="border-collapse:separate;">
+              <tr>
+                <td align="center" bgcolor="#67e8f9" style="background-color:#67e8f9;border:1px solid #a5f3fc;border-radius:12px;">
+                  <a class="lab-button" href="[[ recovery_url ]]" style="display:inline-block;padding:15px 24px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:14px;font-weight:900;letter-spacing:1px;color:#020617;text-decoration:none;">
+                    CONTINUAR CON MI SELECCIÓN&nbsp;&nbsp;&#8594;
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:15px;color:#64748b;">
+              Si tienes preguntas sobre tu pedido o la documentación, estamos para ayudarte.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" style="padding:0 34px 14px;background-color:#071426;">
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="height:1px;line-height:1px;font-size:1px;background-color:#164e63;">&nbsp;</td>
+                <td width="180" align="center">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:9px;line-height:12px;font-weight:700;letter-spacing:1.3px;color:#67e8f9;">
+                    TU SELECCIÓN
+                  </p>
+                </td>
+                <td style="height:1px;line-height:1px;font-size:1px;background-color:#164e63;">&nbsp;</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        [% if cart_items %]
+          [% for item in cart_items %]
+          <tr>
+            <td class="lab-pad" style="padding:0 34px 13px;background-color:#071426;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#0b1b31" style="width:100%;background-color:#0b1b31;border:1px solid #17324d;border-collapse:separate;border-spacing:0;border-radius:14px;overflow:hidden;">
+                <tr>
+                  <td class="lab-product-image" width="145" align="center" valign="middle" style="width:145px;padding:16px;background-color:#0e2139;border-right:1px solid #17324d;">
+                    <a href="[[ item.productURL | default: item.product_url | default: item.url | default: item.product.url | default: 'https://labcorepep.com/shop' ]]" style="text-decoration:none;">
+                      <img src="[[ item.productImageURL | default: item.product_image_url | default: item.imageUrl | default: item.image_url | default: item.image | default: item.product.productImageURL | default: item.product.product_image_url | default: item.product.product_image_urls[0] | default: 'https://labcorepep.com/tarro1.png' ]]" alt="Producto guardado en tu selección" width="113" style="display:block;width:113px;max-width:113px;height:auto;margin:0 auto;border:0;outline:none;">
+                    </a>
+                  </td>
+                  <td class="lab-product-copy" valign="middle" style="padding:18px 20px;">
+                    <p style="margin:0 0 6px;font-family:'Courier New',Courier,monospace;font-size:8px;line-height:11px;font-weight:700;letter-spacing:1.1px;color:#67e8f9;">
+                      PRODUCTO GUARDADO&nbsp;&nbsp;//&nbsp;&nbsp;CANT.
+                      [[ item.productQuantity | default: item.product_quantity | default: item.quantity | default: item.qty | default: '1' ]]
+                    </p>
+                    <h2 style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:18px;line-height:22px;font-weight:800;color:#f8fafc;">
+                      [[ item.productTitle | default: item.product_title | default: item.name | default: item.title | default: item.product.name | default: item.product.title | default: 'Producto de investigación LAB_CORE' ]]
+                    </h2>
+                    <p style="margin:8px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:#94a3b8;">
+                      [[ item.productDescription | default: item.product_description | default: item.description | default: item.product.description | default: 'Compuesto destinado exclusivamente a investigación de laboratorio. Consulta la ficha del producto y su documentación disponible.' ]]
+                    </p>
+                    <p style="margin:10px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:17px;line-height:21px;font-weight:900;color:#a5f3fc;">
+                      [[ cart_currency ]]&nbsp;[[ item.productPrice | default: item.product_price | default: item.price | default: item.product.price | default: '0.00' ]]
+                    </p>
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="margin-top:11px;border-collapse:separate;">
+                      <tr>
+                        <td bgcolor="#0e7490" style="background-color:#0e7490;border:1px solid #22d3ee;border-radius:8px;">
+                          <a href="[[ item.productURL | default: item.product_url | default: item.url | default: item.product.url | default: 'https://labcorepep.com/shop' ]]" style="display:inline-block;padding:9px 12px;font-family:Arial,Helvetica,sans-serif;font-size:8px;line-height:11px;font-weight:900;letter-spacing:.6px;color:#ffffff;text-decoration:none;">
+                            VER PRODUCTO
+                          </a>
+                        </td>
+                        <td width="8">&nbsp;</td>
+                        <td style="background-color:#071426;border:1px solid #334155;border-radius:8px;">
+                          <a href="https://labcorepep.com/coa-library" style="display:inline-block;padding:9px 12px;font-family:Arial,Helvetica,sans-serif;font-size:8px;line-height:11px;font-weight:900;letter-spacing:.6px;color:#cbd5e1;text-decoration:none;">
+                            CONSULTAR COA
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          [% endfor %]
+        [% else %]
+          <tr>
+            <td class="lab-pad" style="padding:0 34px 14px;background-color:#071426;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#0b1b31" style="width:100%;background-color:#0b1b31;border:1px solid #17324d;border-collapse:separate;border-radius:14px;">
+                <tr>
+                  <td align="center" style="padding:24px;">
+                    <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:21px;font-weight:800;color:#f8fafc;">Tu selección está lista.</p>
+                    <p style="margin:7px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:17px;color:#94a3b8;">Vuelve a LAB_CORE para revisar los productos y la documentación disponible.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        [% endif %]
+
+        <tr>
+          <td class="lab-pad" style="padding:8px 34px 18px;background-color:#071426;">
+            <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#050d1b" style="width:100%;background-color:#050d1b;border:1px solid #17324d;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;">
+              <tr>
+                <td class="lab-trust" width="33.33%" align="center" style="padding:13px 6px;border-right:1px solid #17324d;">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:8px;line-height:11px;font-weight:700;letter-spacing:1px;color:#67e8f9;">01 // REVISA</p>
+                  <p style="margin:3px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:13px;font-weight:700;color:#e2e8f0;">Detalles del producto</p>
+                </td>
+                <td class="lab-trust" width="33.33%" align="center" style="padding:13px 6px;border-right:1px solid #17324d;">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:8px;line-height:11px;font-weight:700;letter-spacing:1px;color:#67e8f9;">02 // VERIFICA</p>
+                  <p style="margin:3px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:13px;font-weight:700;color:#e2e8f0;">Documentación COA</p>
+                </td>
+                <td class="lab-trust lab-trust-last" width="33.33%" align="center" style="padding:13px 6px;">
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:8px;line-height:11px;font-weight:700;letter-spacing:1px;color:#67e8f9;">03 // CONTINÚA</p>
+                  <p style="margin:3px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:13px;font-weight:700;color:#e2e8f0;">Checkout seguro</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" align="center" style="padding:8px 34px 30px;background-color:#071426;">
+            <p style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:21px;font-weight:800;color:#f8fafc;">
+              ¿LISTO PARA CONTINUAR?
+            </p>
+            <table role="presentation" border="0" cellspacing="0" cellpadding="0" style="border-collapse:separate;">
+              <tr>
+                <td align="center" bgcolor="#67e8f9" style="background-color:#67e8f9;border:1px solid #a5f3fc;border-radius:12px;">
+                  <a class="lab-button" href="[[ recovery_url ]]" style="display:inline-block;padding:15px 24px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:14px;font-weight:900;letter-spacing:1px;color:#020617;text-decoration:none;">
+                    CONTINUAR CON MI SELECCIÓN&nbsp;&nbsp;&#8594;
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td class="lab-pad" align="center" style="padding:23px 34px;background-color:#050d1b;border-top:1px solid #17324d;">
+            <p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;font-weight:700;color:#e2e8f0;">
+              ¿Necesitas ayuda con tu pedido?
+            </p>
+            <p style="margin:0 0 15px;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:18px;color:#94a3b8;">
+              Escríbenos a <a href="mailto:info@labcorepep.com" style="color:#67e8f9;text-decoration:underline;">info@labcorepep.com</a>
+            </p>
+            <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:15px;color:#64748b;">
+              Todos los productos se ofrecen exclusivamente para investigación legítima de laboratorio. No son medicamentos ni están destinados al consumo humano, uso veterinario, diagnóstico o tratamiento.
+            </p>
+            <p style="margin:12px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:9px;line-height:15px;color:#64748b;">
+              © [[ current_date | date:'%Y' ]] LAB_CORE ·
+              <a href="https://labcorepep.com/privacy-policy" style="color:#94a3b8;text-decoration:underline;">Privacidad</a>
+              &nbsp;·&nbsp;
+              <a href="[[ preference_link ]]" style="color:#94a3b8;text-decoration:underline;">Preferencias</a>
+              &nbsp;·&nbsp;
+              <a href="[[ unsubscribe_link ]]" style="color:#94a3b8;text-decoration:underline;">Cancelar suscripción</a>
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="height:4px;line-height:4px;font-size:4px;background-color:#67e8f9;">&nbsp;</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
