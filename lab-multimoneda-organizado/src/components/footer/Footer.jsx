@@ -275,7 +275,7 @@ export default function Footer() {
                 <Mail size={15} className="mt-0.5 shrink-0 text-cyan-500" />
                 <div className="min-w-0">
                   <span className="block font-sans text-xs text-slate-400">{t("footer.email")}</span>
-                  <a href="mailto:hello@labcore.com" className="mt-1 block break-all text-white transition-colors hover:text-cyan-300">hello@labcore.com</a>
+                  <a href="mailto:info@labcorepep.com" className="mt-1 block break-all text-white transition-colors hover:text-cyan-300">info@labcorepep.com</a>
                 </div>
               </div>
 

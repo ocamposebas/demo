@@ -23,12 +23,12 @@ export const legalCopy = {
       plainSummary: "Resumen en lenguaje claro",
       summaryWarning: "Este resumen ayuda a entender el documento, pero no sustituye sus cláusulas completas.",
       operatorTitle: "Identidad del vendedor",
-      operatorText: "La entidad legal que actúe como vendedor contractual, junto con su domicilio, datos fiscales y jurisdicción, debe mostrarse en el checkout o en la confirmación antes de aceptar cualquier pago. Si esa información no aparece, no complete la compra y escriba a hello@labcore.com.",
+      operatorText: "La entidad legal que actúe como vendedor contractual, junto con su domicilio, datos fiscales y jurisdicción, debe mostrarse en el checkout o en la confirmación antes de aceptar cualquier pago. Si esa información no aparece, no complete la compra y escriba a info@labcorepep.com.",
       acceptanceTitle: "Aceptación expresa",
       acceptanceText: "Al crear una cuenta, usar el sitio, marcar la casilla de aceptación o enviar un pedido, confirma que leyó y aceptó los documentos aplicables en su versión vigente. La casilla del checkout no viene marcada previamente.",
       mandatoryRights: "Nada en estos documentos elimina derechos irrenunciables otorgados por la ley aplicable ni limita responsabilidad que legalmente no pueda limitarse.",
       date: "20 de julio de 2026",
-      email: "hello@labcore.com",
+      email: "info@labcorepep.com",
     },
     labels: {
       privacy: "Política de privacidad",
@@ -55,7 +55,7 @@ export const legalCopy = {
             title: "1. Alcance y responsable",
             paragraphs: [
               "Esta Política se aplica a labcore.com y a las páginas, cuentas, formularios, carrito, checkout, alertas de inventario y comunicaciones vinculadas a LAB_CORE (el \"Sitio\"). LAB_CORE actúa como nombre comercial de la entidad vendedora identificada antes del pago y en la confirmación del pedido.",
-              "Para consultas o para ejercer derechos, escriba a hello@labcore.com. Incluya el país desde el cual realizó la compra para dirigir su solicitud conforme a la norma aplicable.",
+              "Para consultas o para ejercer derechos, escriba a info@labcorepep.com. Incluya el país desde el cual realizó la compra para dirigir su solicitud conforme a la norma aplicable.",
             ],
           },
           {
@@ -157,7 +157,7 @@ export const legalCopy = {
             id: "requests",
             title: "11. Cómo presentar una solicitud",
             paragraphs: [
-              "Envíe la solicitud a hello@labcore.com con el asunto \"Privacidad / Privacy\", su nombre, correo asociado, país, derecho que desea ejercer y la información necesaria para localizar su cuenta o pedido. Podemos pedir verificación razonable de identidad y autoridad para evitar divulgaciones fraudulentas.",
+              "Envíe la solicitud a info@labcorepep.com con el asunto \"Privacidad / Privacy\", su nombre, correo asociado, país, derecho que desea ejercer y la información necesaria para localizar su cuenta o pedido. Podemos pedir verificación razonable de identidad y autoridad para evitar divulgaciones fraudulentas.",
               "Responderemos dentro del plazo exigido por la ley aplicable. Si la solicitud es incompleta, explicaremos qué dato falta. Si se deniega total o parcialmente, comunicaremos la razón cuando legalmente corresponda y las opciones de reclamación disponibles.",
             ],
           },
@@ -165,7 +165,7 @@ export const legalCopy = {
             id: "marketing-age",
             title: "12. Marketing, menores y terceros",
             paragraphs: [
-              "Puede cancelar correos promocionales mediante el enlace de baja o escribiendo a hello@labcore.com. Aun así, podremos enviar comunicaciones operativas de cuenta, seguridad o pedidos.",
+              "Puede cancelar correos promocionales mediante el enlace de baja o escribiendo a info@labcorepep.com. Aun así, podremos enviar comunicaciones operativas de cuenta, seguridad o pedidos.",
               "El Sitio es para mayores de 21 años y no recopila intencionalmente datos de menores. Si cree que un menor nos proporcionó información, solicite su eliminación. Los sitios de terceros enlazados tienen sus propias políticas y LAB_CORE no controla sus prácticas.",
             ],
           },
@@ -174,7 +174,7 @@ export const legalCopy = {
             title: "13. Cambios y contacto",
             paragraphs: [
               "Podemos actualizar esta Política para reflejar cambios operativos o legales. Publicaremos la nueva fecha y, si el cambio es material, daremos el aviso o solicitaremos consentimiento cuando corresponda. La versión aplicable a una transacción será la presentada al momento de aceptarla, sin perjuicio de obligaciones legales posteriores.",
-              "Contacto: hello@labcore.com. La identidad y dirección de la entidad responsable deben aparecer antes de habilitar pagos y en la documentación de cada transacción.",
+              "Contacto: info@labcorepep.com. La identidad y dirección de la entidad responsable deben aparecer antes de habilitar pagos y en la documentación de cada transacción.",
             ],
           },
         ],
@@ -281,7 +281,7 @@ export const legalCopy = {
             title: "10. Cancelaciones, devoluciones y reembolsos",
             paragraphs: [
               "Por la naturaleza sensible, trazable y potencialmente no revendible de los compuestos, las ventas son finales después del despacho cuando la ley lo permita. No se aceptan devoluciones de productos abiertos, manipulados, almacenados fuera de especificación o cuya cadena de custodia no pueda verificarse.",
-              "Esta regla no elimina derechos obligatorios por producto incorrecto, daño previo a la entrega, incumplimiento, defecto cubierto, retracto legal aplicable u otra protección irrenunciable. Contacte a hello@labcore.com sin demora con número de pedido, fotos, lote y descripción. No destruya ni reenvíe el producto hasta recibir instrucciones.",
+              "Esta regla no elimina derechos obligatorios por producto incorrecto, daño previo a la entrega, incumplimiento, defecto cubierto, retracto legal aplicable u otra protección irrenunciable. Contacte a info@labcorepep.com sin demora con número de pedido, fotos, lote y descripción. No destruya ni reenvíe el producto hasta recibir instrucciones.",
             ],
           },
           {
@@ -320,7 +320,7 @@ export const legalCopy = {
             id: "law-general",
             title: "15. Ley aplicable y disposiciones generales",
             paragraphs: [
-              "La entidad vendedora y la jurisdicción contractual deben identificarse antes del pago. La relación se regirá por la ley indicada allí, sin privar a consumidores de protecciones obligatorias de su residencia o del lugar de la transacción. Las partes intentarán resolver primero cualquier controversia mediante hello@labcore.com, sin impedir el acceso a autoridades o tribunales competentes.",
+              "La entidad vendedora y la jurisdicción contractual deben identificarse antes del pago. La relación se regirá por la ley indicada allí, sin privar a consumidores de protecciones obligatorias de su residencia o del lugar de la transacción. Las partes intentarán resolver primero cualquier controversia mediante info@labcorepep.com, sin impedir el acceso a autoridades o tribunales competentes.",
               "Si una cláusula es inválida, se ajustará al mínimo necesario y las demás continuarán. La falta de ejercicio no es renuncia. Estos Términos y los documentos incorporados constituyen el acuerdo sobre el Sitio y los pedidos, salvo condiciones expresas de una orden aceptada. Las cláusulas que por naturaleza deban sobrevivir seguirán vigentes.",
             ],
           },
@@ -329,7 +329,7 @@ export const legalCopy = {
             title: "16. Cambios y contacto",
             paragraphs: [
               "Podemos modificar estos Términos de forma prospectiva. La fecha y versión estarán visibles; los cambios materiales no alterarán retroactivamente un pedido aceptado salvo acuerdo o exigencia legal. El uso posterior a una entrada en vigor constituye aceptación para actividades futuras cuando la ley lo permita.",
-              "Contacto: hello@labcore.com. No complete un pago si el checkout no muestra la entidad vendedora, precio total y condiciones aplicables.",
+              "Contacto: info@labcorepep.com. No complete un pago si el checkout no muestra la entidad vendedora, precio total y condiciones aplicables.",
             ],
           },
         ],
@@ -417,7 +417,7 @@ export const legalCopy = {
             title: "9. Aceptación, cambios y contacto",
             paragraphs: [
               "Este Aviso forma parte de los Términos. Al continuar en el Sitio o realizar un pedido, reconoce que comprende la naturaleza exclusivamente investigativa y que ninguna información constituye una invitación a uso humano o veterinario.",
-              "Podemos actualizar este Aviso; la versión y fecha estarán visibles. Preguntas o reportes de contenido potencialmente confuso: hello@labcore.com.",
+              "Podemos actualizar este Aviso; la versión y fecha estarán visibles. Preguntas o reportes de contenido potencialmente confuso: info@labcorepep.com.",
             ],
           },
         ],
@@ -512,7 +512,7 @@ export const legalCopy = {
             title: "9. Incidentes y exposición",
             paragraphs: [
               "Ante pérdida, robo, derrame, exposición o sospecha de administración, activará de inmediato los procedimientos del laboratorio y contactará servicios locales de emergencia, toxicología o autoridad competente. Proporcionará etiqueta, lote y documentación disponible. LAB_CORE no brinda atención ni instrucciones médicas.",
-              "Cuando sea seguro y legal, notificará a hello@labcore.com para apoyar identificación de lote y trazabilidad. Esa comunicación no sustituye la respuesta de emergencia ni admite responsabilidad.",
+              "Cuando sea seguro y legal, notificará a info@labcorepep.com para apoyar identificación de lote y trazabilidad. Esa comunicación no sustituye la respuesta de emergencia ni admite responsabilidad.",
             ],
           },
           {
@@ -528,7 +528,7 @@ export const legalCopy = {
             title: "11. Vigencia, separabilidad y contacto",
             paragraphs: [
               "Este Acuerdo rige desde la aceptación y sus obligaciones de uso, custodia, responsabilidad e indemnidad sobreviven a entrega, cierre de cuenta o terminación. Si una cláusula es inválida, se ajustará al mínimo necesario y las restantes seguirán vigentes.",
-              "Se aplica la jurisdicción identificada por la entidad vendedora antes del pago, respetando normas obligatorias. Preguntas: hello@labcore.com. No acepte si la entidad contractual o las condiciones de la compra no están claramente identificadas.",
+              "Se aplica la jurisdicción identificada por la entidad vendedora antes del pago, respetando normas obligatorias. Preguntas: info@labcorepep.com. No acepte si la entidad contractual o las condiciones de la compra no están claramente identificadas.",
             ],
           },
         ],
@@ -549,12 +549,12 @@ export const legalCopy = {
       plainSummary: "Plain-language summary",
       summaryWarning: "This summary makes the document easier to understand, but it does not replace the full provisions below.",
       operatorTitle: "Seller identity",
-      operatorText: "The legal entity acting as contractual seller, together with its address, tax details, and jurisdiction, must be displayed at checkout or in the confirmation before any payment is accepted. If that information is missing, do not complete the purchase and email hello@labcore.com.",
+      operatorText: "The legal entity acting as contractual seller, together with its address, tax details, and jurisdiction, must be displayed at checkout or in the confirmation before any payment is accepted. If that information is missing, do not complete the purchase and email info@labcorepep.com.",
       acceptanceTitle: "Express acceptance",
       acceptanceText: "By creating an account, using the Site, checking the acceptance box, or submitting an order, you confirm that you read and accepted the applicable documents in their then-current version. The checkout acceptance box is not preselected.",
       mandatoryRights: "Nothing in these documents removes non-waivable rights granted by applicable law or limits liability that cannot legally be limited.",
       date: "July 20, 2026",
-      email: "hello@labcore.com",
+      email: "info@labcorepep.com",
     },
     labels: {
       privacy: "Privacy Policy",
@@ -581,7 +581,7 @@ export const legalCopy = {
             title: "1. Scope and controller",
             paragraphs: [
               "This Policy applies to labcore.com and LAB_CORE-linked pages, accounts, forms, cart, checkout, stock alerts, and communications (the \"Site\"). LAB_CORE is the trade name used by the selling entity identified before payment and in the order confirmation.",
-              "For questions or rights requests, email hello@labcore.com and include the country from which you placed your order so the request can be handled under the applicable rules.",
+              "For questions or rights requests, email info@labcorepep.com and include the country from which you placed your order so the request can be handled under the applicable rules.",
             ],
           },
           {
@@ -683,7 +683,7 @@ export const legalCopy = {
             id: "requests",
             title: "11. Submitting a request",
             paragraphs: [
-              "Email hello@labcore.com with the subject \"Privacy,\" your name, account email, country, requested right, and information needed to locate the account or order. We may reasonably verify identity and authority to prevent fraudulent disclosures.",
+              "Email info@labcorepep.com with the subject \"Privacy,\" your name, account email, country, requested right, and information needed to locate the account or order. We may reasonably verify identity and authority to prevent fraudulent disclosures.",
               "We will respond within the time required by applicable law. If incomplete, we will explain what is missing. If denied in whole or part, we will give the reason and available complaint options where legally required.",
             ],
           },
@@ -691,7 +691,7 @@ export const legalCopy = {
             id: "marketing-age",
             title: "12. Marketing, minors, and third parties",
             paragraphs: [
-              "You can opt out of promotional email through its unsubscribe link or hello@labcore.com. Operational account, security, and order messages may still be sent.",
+              "You can opt out of promotional email through its unsubscribe link or info@labcorepep.com. Operational account, security, and order messages may still be sent.",
               "The Site is for adults 21 or older and does not knowingly collect minors' data. Contact us if you believe a minor submitted information. Linked third-party sites have their own policies, which LAB_CORE does not control.",
             ],
           },
@@ -700,7 +700,7 @@ export const legalCopy = {
             title: "13. Changes and contact",
             paragraphs: [
               "We may update this Policy for operational or legal changes. A new date will be posted and material changes will receive notice or consent where required. The version presented when a transaction was accepted applies to it, subject to later legal obligations.",
-              "Contact: hello@labcore.com. The responsible entity's identity and address must be displayed before payments are enabled and in transaction records.",
+              "Contact: info@labcorepep.com. The responsible entity's identity and address must be displayed before payments are enabled and in transaction records.",
             ],
           },
         ],
@@ -807,7 +807,7 @@ export const legalCopy = {
             title: "10. Cancellations, returns, and refunds",
             paragraphs: [
               "Because compounds may be sensitive, traceable, and unsuitable for resale, sales are final after shipment where permitted. Opened, handled, improperly stored products or items without verifiable chain of custody cannot be returned.",
-              "This rule does not remove mandatory rights for incorrect goods, pre-delivery damage, nonconformity, covered defects, applicable statutory withdrawal, or other non-waivable protections. Contact hello@labcore.com promptly with order number, photos, lot, and details. Do not destroy or return the item until instructed.",
+              "This rule does not remove mandatory rights for incorrect goods, pre-delivery damage, nonconformity, covered defects, applicable statutory withdrawal, or other non-waivable protections. Contact info@labcorepep.com promptly with order number, photos, lot, and details. Do not destroy or return the item until instructed.",
             ],
           },
           {
@@ -846,7 +846,7 @@ export const legalCopy = {
             id: "law-general",
             title: "15. Governing law and general terms",
             paragraphs: [
-              "The selling entity and contractual jurisdiction must be identified before payment. The relationship is governed by the law stated there without depriving consumers of mandatory protections in their residence or transaction location. The parties will first try to resolve disputes through hello@labcore.com without blocking access to competent authorities or courts.",
+              "The selling entity and contractual jurisdiction must be identified before payment. The relationship is governed by the law stated there without depriving consumers of mandatory protections in their residence or transaction location. The parties will first try to resolve disputes through info@labcorepep.com without blocking access to competent authorities or courts.",
               "If a provision is invalid, it will be narrowed as necessary and the rest remains effective. Failure to enforce is not waiver. These Terms and incorporated documents are the agreement for the Site and orders, except express terms of an accepted order. Provisions intended by nature to survive will do so.",
             ],
           },
@@ -855,7 +855,7 @@ export const legalCopy = {
             title: "16. Changes and contact",
             paragraphs: [
               "We may amend these Terms prospectively. The date and version will be visible; material changes will not retroactively alter an accepted order absent agreement or legal requirement. Continued use after effectiveness is acceptance for future activity where lawful.",
-              "Contact: hello@labcore.com. Do not complete payment if checkout does not show the seller, total price, and applicable conditions.",
+              "Contact: info@labcorepep.com. Do not complete payment if checkout does not show the seller, total price, and applicable conditions.",
             ],
           },
         ],
@@ -943,7 +943,7 @@ export const legalCopy = {
             title: "9. Acceptance, changes, and contact",
             paragraphs: [
               "This Disclaimer is part of the Terms. By continuing on the Site or ordering, you acknowledge the exclusively research nature and understand that no information invites human or veterinary use.",
-              "We may update this Disclaimer; its version and date will be visible. Questions or reports of potentially confusing content: hello@labcore.com.",
+              "We may update this Disclaimer; its version and date will be visible. Questions or reports of potentially confusing content: info@labcorepep.com.",
             ],
           },
         ],
@@ -1038,7 +1038,7 @@ export const legalCopy = {
             title: "9. Incidents and exposure",
             paragraphs: [
               "For loss, theft, spill, exposure, or suspected administration, immediately activate laboratory procedures and contact local emergency, poison-control, or competent authority services. Provide available label, batch, and documents. LAB_CORE does not provide medical care or instructions.",
-              "When safe and lawful, notify hello@labcore.com to support batch identification and traceability. That notice does not replace emergency response or admit liability.",
+              "When safe and lawful, notify info@labcorepep.com to support batch identification and traceability. That notice does not replace emergency response or admit liability.",
             ],
           },
           {
@@ -1054,7 +1054,7 @@ export const legalCopy = {
             title: "11. Duration, severability, and contact",
             paragraphs: [
               "This Agreement begins on acceptance, and use, custody, responsibility, and indemnity duties survive delivery, account closure, or termination. If a provision is invalid, it will be narrowed as needed and the remainder stays effective.",
-              "The jurisdiction identified by the seller before payment applies subject to mandatory law. Questions: hello@labcore.com. Do not accept if the contractual entity or purchase conditions are not clearly identified.",
+              "The jurisdiction identified by the seller before payment applies subject to mandatory law. Questions: info@labcorepep.com. Do not accept if the contractual entity or purchase conditions are not clearly identified.",
             ],
           },
         ],

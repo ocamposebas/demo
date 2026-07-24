@@ -35,9 +35,9 @@ const pages = {
   },
   contact: {
     code: "CONTACT_NODE", icon: Mail,
-    es: { title: "Contacto", intro: "Canal oficial para soporte de pedidos, documentación técnica y consultas comerciales.", sections: [["Soporte de pedidos", "Incluye tu número de pedido y el correo de compra. No envíes números completos de tarjeta ni contraseñas."], ["Documentación y COA", "Indica producto, SKU, lote y el documento que necesitas revisar para que podamos responder con precisión."], ["Horario de atención", "Lunes a viernes, excepto festivos. Los mensajes se atienden por orden de llegada."]], note: "Correo oficial: hello@labcore.com" },
-    en: { title: "Contact", intro: "Official channel for order support, technical documentation and commercial inquiries.", sections: [["Order support", "Include your order number and purchase email. Never send full card numbers or passwords."], ["Documentation and COAs", "Specify the product, SKU, batch and document you need reviewed so we can answer accurately."], ["Support hours", "Monday through Friday, excluding holidays. Messages are handled in the order received."]], note: "Official email: hello@labcore.com" },
-    action: ["mailto:hello@labcore.com", "Enviar correo", "Send email"],
+    es: { title: "Contacto", intro: "Canal oficial para soporte de pedidos, documentación técnica y consultas comerciales.", sections: [["Soporte de pedidos", "Incluye tu número de pedido y el correo de compra. No envíes números completos de tarjeta ni contraseñas."], ["Documentación y COA", "Indica producto, SKU, lote y el documento que necesitas revisar para que podamos responder con precisión."], ["Horario de atención", "Lunes a viernes, excepto festivos. Los mensajes se atienden por orden de llegada."]], note: "Correo oficial: info@labcorepep.com" },
+    en: { title: "Contact", intro: "Official channel for order support, technical documentation and commercial inquiries.", sections: [["Order support", "Include your order number and purchase email. Never send full card numbers or passwords."], ["Documentation and COAs", "Specify the product, SKU, batch and document you need reviewed so we can answer accurately."], ["Support hours", "Monday through Friday, excluding holidays. Messages are handled in the order received."]], note: "Official email: info@labcorepep.com" },
+    action: ["mailto:info@labcorepep.com", "Enviar correo", "Send email"],
   },
 };
 

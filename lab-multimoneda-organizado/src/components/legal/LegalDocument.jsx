@@ -48,7 +48,7 @@ export default function LegalDocument({ documentType }) {
                 <span className="block text-slate-600">{copy.ui.version}</span>
                 <span className="mt-2 block text-cyan-300">{LEGAL_VERSION}</span>
               </div>
-              <a href="mailto:hello@labcore.com" className="col-span-2 flex min-h-12 items-center justify-between gap-3 px-4 text-slate-400 transition-colors hover:bg-cyan-300/[0.05] hover:text-cyan-300">
+              <a href="mailto:info@labcorepep.com" className="col-span-2 flex min-h-12 items-center justify-between gap-3 px-4 text-slate-400 transition-colors hover:bg-cyan-300/[0.05] hover:text-cyan-300">
                 <span className="flex items-center gap-2"><Mail size={12} /> {copy.ui.email}</span>
                 <ArrowUpRight size={12} />
               </a>
@@ -153,7 +153,7 @@ export default function LegalDocument({ documentType }) {
               <p className="font-mono text-[8px] font-bold uppercase tracking-[0.2em] text-cyan-300">{copy.ui.acceptanceTitle}</p>
               <p className="mt-4 max-w-3xl font-sans text-sm leading-7 text-slate-400">{copy.ui.acceptanceText}</p>
             </div>
-            <a href="mailto:hello@labcore.com" className="flex min-h-12 items-center justify-center gap-2 border border-cyan-300/25 px-5 font-['Orbitron'] text-[8px] font-black uppercase tracking-[0.12em] text-cyan-300 transition-colors hover:bg-cyan-300 hover:text-[#020617]">
+            <a href="mailto:info@labcorepep.com" className="flex min-h-12 items-center justify-center gap-2 border border-cyan-300/25 px-5 font-['Orbitron'] text-[8px] font-black uppercase tracking-[0.12em] text-cyan-300 transition-colors hover:bg-cyan-300 hover:text-[#020617]">
               <Mail size={13} /> {copy.ui.contact}
             </a>
           </div>
