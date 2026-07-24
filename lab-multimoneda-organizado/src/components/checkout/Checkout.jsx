@@ -1138,7 +1138,9 @@ export default function Checkout() {
                 <div className="hidden items-end sm:flex">
                   <div className="flex h-12 w-full items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.018] px-4 font-mono text-[8px] uppercase tracking-[0.1em] text-slate-600">
                     <Truck size={13} className="text-cyan-300/60" />
-                    {language === "es" ? "Envío calculado al confirmar" : "Shipping calculated at confirmation"}
+                    {language === "es"
+                      ? "Envío gratis por lanzamiento en Colombia"
+                      : "Free launch shipping in Colombia"}
                   </div>
                 </div>
 
@@ -1584,7 +1586,9 @@ export default function Checkout() {
                         {t("checkout.total")}
                       </span>
                       <p className="mt-1 font-mono text-[7px] uppercase tracking-[0.08em] text-slate-700">
-                        {language === "es" ? "Total antes del envío" : "Total before shipping"}
+                        {language === "es"
+                          ? "Envío gratis por lanzamiento incluido"
+                          : "Free launch shipping included"}
                       </p>
                     </div>
                     <span className="font-['Orbitron'] text-2xl font-black tracking-[-0.04em] text-cyan-300">
