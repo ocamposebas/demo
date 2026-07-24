@@ -2,6 +2,21 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
 
 const CartContext = createContext(null);
+const CART_STORAGE_KEY = "lab_cart";
+const CART_ID_STORAGE_KEY = "lab_omnisend_cart_id";
+const CART_EMAIL_STORAGE_KEY = "lab_omnisend_contact_email";
+const CART_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{15,79}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const createCartId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+  return `lab_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 14)}`;
+};
+
+const normalizeEmail = (value) => {
+  const email = String(value || "").trim().toLowerCase().slice(0, 160);
+  return EMAIL_PATTERN.test(email) ? email : "";
+};
 
 const getCartKey = (item) => {
   if (!item || typeof item !== "object") return "";
@@ -49,36 +64,175 @@ const normalizeCartItem = (item, fallbackQuantity = 1) => {
 };
 
 export function CartProvider({ children }) {
-  const { currency } = useCurrency();
+  const { currency, setCurrency } = useCurrency();
   const [cartItems, setCartItems] = useState([]);
+  const [cartId, setCartId] = useState("");
+  const [cartContactEmail, setCartContactEmail] = useState("");
   const [cartReady, setCartReady] = useState(false);
   const [cartPricing, setCartPricing] = useState(false);
   const [cartPricingError, setCartPricingError] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const quoteRequestRef = useRef(0);
+  const cartActionRef = useRef("updated");
+  const addedCartKeyRef = useRef("");
+  const cartHadItemsRef = useRef(false);
+  const lastSyncedSignatureRef = useRef("");
+  const lastCheckoutSignatureRef = useRef("");
 
   useEffect(() => {
-    try {
-      const savedCart = localStorage.getItem("lab_cart");
-      const parsedCart = savedCart ? JSON.parse(savedCart) : [];
-      const normalizedCart = Array.isArray(parsedCart) ? parsedCart.map((item) => normalizeCartItem(item)).filter(Boolean) : [];
+    let active = true;
+    const initializeCart = async () => {
+      let normalizedCart = [];
+      let nextCartId = createCartId();
+      try {
+        const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+        const parsedCart = savedCart ? JSON.parse(savedCart) : [];
+        normalizedCart = Array.isArray(parsedCart)
+          ? parsedCart.map((item) => normalizeCartItem(item)).filter(Boolean)
+          : [];
+        const savedCartId = String(localStorage.getItem(CART_ID_STORAGE_KEY) || "");
+        if (CART_ID_PATTERN.test(savedCartId)) nextCartId = savedCartId;
+        const savedEmail = normalizeEmail(localStorage.getItem(CART_EMAIL_STORAGE_KEY));
+        if (savedEmail) setCartContactEmail(savedEmail);
+      } catch (error) {
+        console.error("Failed to parse cart:", error);
+      }
+
+      const recoveryToken = new URLSearchParams(window.location.search).get("recover");
+      if (recoveryToken) {
+        try {
+          const response = await fetch(
+            `/api/marketing/cart?recover=${encodeURIComponent(recoveryToken)}`,
+            { credentials: "same-origin", cache: "no-store", headers: { Accept: "application/json" } },
+          );
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok || !Array.isArray(payload?.items)) {
+            throw new Error(payload?.code || "CART_RECOVERY_FAILED");
+          }
+          normalizedCart = payload.items.map((item) => normalizeCartItem(item)).filter(Boolean);
+          if (CART_ID_PATTERN.test(String(payload.cartId || ""))) nextCartId = payload.cartId;
+          if (["USD", "COP", "MXN"].includes(payload.currency)) setCurrency(payload.currency);
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("recover");
+          window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
+        } catch (error) {
+          console.error("Failed to recover cart:", error?.message || error);
+        }
+      }
+
+      if (!active) return;
+      cartHadItemsRef.current = normalizedCart.length > 0;
       setCartItems(normalizedCart);
-    } catch (error) {
-      console.error("Failed to parse cart:", error);
-      setCartItems([]);
-    } finally {
+      setCartId(nextCartId);
+      try {
+        localStorage.setItem(CART_ID_STORAGE_KEY, nextCartId);
+      } catch {}
       setCartReady(true);
-    }
-  }, []);
+    };
+    initializeCart();
+    return () => { active = false; };
+  }, [setCurrency]);
 
   useEffect(() => {
     if (!cartReady) return;
     try {
-      localStorage.setItem("lab_cart", JSON.stringify(cartItems));
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
     } catch (error) {
       console.error("Failed to save cart:", error);
     }
   }, [cartItems, cartReady]);
+
+  const identifyCartContact = useCallback((value) => {
+    const email = normalizeEmail(value);
+    if (!email) return false;
+    setCartContactEmail(email);
+    try {
+      localStorage.setItem(CART_EMAIL_STORAGE_KEY, email);
+    } catch {}
+    return true;
+  }, []);
+
+  useEffect(() => {
+    const handleNewsletter = (event) => identifyCartContact(event?.detail?.email);
+    const handleAccount = (event) => {
+      const email = event?.detail?.user?.email;
+      if (email) {
+        identifyCartContact(email);
+        return;
+      }
+      setCartContactEmail("");
+      try {
+        localStorage.removeItem(CART_EMAIL_STORAGE_KEY);
+      } catch {}
+    };
+    window.addEventListener("lab:newsletter-subscribed", handleNewsletter);
+    window.addEventListener("lab:account-session", handleAccount);
+    return () => {
+      window.removeEventListener("lab:newsletter-subscribed", handleNewsletter);
+      window.removeEventListener("lab:account-session", handleAccount);
+    };
+  }, [identifyCartContact]);
+
+  useEffect(() => {
+    if (!cartReady || !cartId || !cartContactEmail) return undefined;
+    if (cartItems.length === 0 && !cartHadItemsRef.current) return undefined;
+
+    const action = cartItems.length === 0 ? "cleared" : cartActionRef.current;
+    const addedCartKey = addedCartKeyRef.current;
+    const signature = JSON.stringify({
+      cartId,
+      email: cartContactEmail,
+      currency,
+      action,
+      addedCartKey,
+      items: cartItems.map((item) => [item.id, item.variationId || 0, item.quantity]),
+    });
+    if (signature === lastSyncedSignatureRef.current) return undefined;
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch("/api/marketing/cart", {
+          method: "POST",
+          credentials: "same-origin",
+          signal: controller.signal,
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            cartId,
+            email: cartContactEmail,
+            currency,
+            action,
+            addedCartKey,
+            items: cartItems.map((item) => ({
+              productId: Number(item.id),
+              variationId: Number(item.variationId || 0),
+              quantity: Number(item.quantity),
+              title: item.name,
+              slug: item.slug,
+              sku: item.sku,
+              imageUrl: item.images?.[0]?.src,
+              variantTitle: item.variantLabel,
+            })),
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload?.ok === false) throw new Error(payload?.code || "CART_SYNC_FAILED");
+        lastSyncedSignatureRef.current = signature;
+        cartHadItemsRef.current = cartItems.length > 0;
+        cartActionRef.current = "updated";
+        addedCartKeyRef.current = "";
+      } catch (error) {
+        if (error?.name !== "AbortError") {
+          console.warn("Abandoned cart sync unavailable:", error?.message || error);
+        }
+      }
+    }, 1_200);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [cartItems, cartReady, cartId, cartContactEmail, currency]);
 
   const refreshCartPrices = useCallback(async (targetCurrency = currency, itemsOverride = null) => {
     const sourceItems = Array.isArray(itemsOverride) ? itemsOverride : cartItems;
@@ -151,6 +305,8 @@ export function CartProvider({ children }) {
     if (!Number.isFinite(desiredPrice) || desiredPrice <= 0) return;
     const productWithKey = normalizeCartItem({ ...product, price: desiredPrice, currency, quantity: 1 });
     if (!productWithKey) return;
+    cartActionRef.current = "added";
+    addedCartKeyRef.current = productWithKey.cartKey;
 
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => getCartKey(item) === productWithKey.cartKey);
@@ -165,10 +321,12 @@ export function CartProvider({ children }) {
   }, [currency]);
 
   const removeFromCart = useCallback((cartKey) => {
+    cartActionRef.current = "updated";
     setCartItems((prevItems) => prevItems.filter((item) => getCartKey(item) !== String(cartKey)));
   }, []);
 
   const updateQuantity = useCallback((cartKey, amount) => {
+    cartActionRef.current = "updated";
     setCartItems((prevItems) => prevItems.map((item) => {
       if (getCartKey(item) !== String(cartKey)) return item;
       const newQty = Math.min(20, item.quantity + amount);
@@ -177,9 +335,50 @@ export function CartProvider({ children }) {
   }, []);
 
   const clearCart = useCallback(() => {
+    cartActionRef.current = "cleared";
     setCartItems([]);
-    if (typeof window !== "undefined") localStorage.removeItem("lab_cart");
+    if (typeof window !== "undefined") localStorage.removeItem(CART_STORAGE_KEY);
   }, []);
+
+  const markCheckoutStarted = useCallback(async (value) => {
+    const email = normalizeEmail(value);
+    if (!email || !cartId || cartItems.length === 0) return false;
+    identifyCartContact(email);
+    const signature = `${cartId}:${email}:${currency}:${cartItems
+      .map((item) => `${item.id}:${item.variationId || 0}:${item.quantity}`)
+      .join("|")}`;
+    if (signature === lastCheckoutSignatureRef.current) return true;
+
+    try {
+      const response = await fetch("/api/marketing/cart", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          cartId,
+          email,
+          currency,
+          action: "started_checkout",
+          items: cartItems.map((item) => ({
+            productId: Number(item.id),
+            variationId: Number(item.variationId || 0),
+            quantity: Number(item.quantity),
+            title: item.name,
+            slug: item.slug,
+            sku: item.sku,
+            imageUrl: item.images?.[0]?.src,
+            variantTitle: item.variantLabel,
+          })),
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.ok === false) return false;
+      lastCheckoutSignatureRef.current = signature;
+      return true;
+    } catch {
+      return false;
+    }
+  }, [cartId, cartItems, currency, identifyCartContact]);
 
   const checkout = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -196,6 +395,8 @@ export function CartProvider({ children }) {
 
   const value = useMemo(() => ({
     cartItems,
+    cartId,
+    cartContactEmail,
     cartReady,
     cartPricing,
     cartPricingError,
@@ -206,11 +407,13 @@ export function CartProvider({ children }) {
     removeFromCart,
     updateQuantity,
     clearCart,
+    identifyCartContact,
+    markCheckoutStarted,
     checkout,
     refreshCartPrices,
     cartTotal,
     cartCount,
-  }), [cartItems, cartReady, cartPricing, cartPricingError, currency, isCartOpen, addToCart, removeFromCart, updateQuantity, clearCart, checkout, refreshCartPrices, cartTotal, cartCount]);
+  }), [cartItems, cartId, cartContactEmail, cartReady, cartPricing, cartPricingError, currency, isCartOpen, addToCart, removeFromCart, updateQuantity, clearCart, identifyCartContact, markCheckoutStarted, checkout, refreshCartPrices, cartTotal, cartCount]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

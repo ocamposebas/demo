@@ -102,6 +102,11 @@ export default function Footer() {
       try {
         window.localStorage.setItem("lab_rewards_popup_subscribed", "true");
       } catch {}
+      window.dispatchEvent(
+        new CustomEvent("lab:newsletter-subscribed", {
+          detail: { email: normalizedEmail.toLowerCase() },
+        }),
+      );
     } catch (error) {
       setNewsletterStatus("error");
       const messages = {

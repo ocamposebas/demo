@@ -7,6 +7,7 @@ import {
   updateWooOrderPayment,
   wooRequest,
 } from "../../../../lib/boldPayments.js";
+import { completeOmnisendOrder } from "../../../../lib/omnisend.js";
 
 export const prerender = false;
 
@@ -99,6 +100,15 @@ export async function GET({ request }) {
     } catch (error) {
       console.error("Bold status WooCommerce update failed:", error.code || error.message);
       return paymentJson({ ok: false, code: "ORDER_STATUS_UPDATE_FAILED", status: mapped.bold, order: publicOrder(order) }, 502);
+    }
+  }
+
+  if (mapped.bold === "APPROVED") {
+    try {
+      await completeOmnisendOrder({ order, request });
+    } catch (error) {
+      // The customer must still see the confirmed payment if marketing is unavailable.
+      console.error("Omnisend order completion failed:", error?.details || error?.message);
     }
   }
 

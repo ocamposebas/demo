@@ -1,429 +1,104 @@
 import {
   cleanText,
-  createBoldReference,
-  createIntegritySignature,
-  getAuthenticatedCustomerId,
-  getBoldConfig,
+  getBoldWebhookSecret,
+  getWooOrderIdFromReference,
   paymentJson,
-  quoteMultiCurrencyCart,
-  resolveSiteOrigin,
+  updateWooOrderPayment,
+  verifyBoldWebhookSignature,
   wooRequest,
 } from "../../../../lib/boldPayments.js";
+import { completeOmnisendOrder } from "../../../../lib/omnisend.js";
 
 export const prerender = false;
+const MAX_BODY_BYTES = 100_000;
 
-const LEGAL_VERSION = "2026.07.20";
-const MAX_BODY_BYTES = 60_000;
-const MAX_LINES = 20;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CHECKOUT_API_KEY = String(import.meta.env.LABCORE_CHECKOUT_API_KEY || "").trim();
-
-const normalizeRoot = (value) =>
-  String(value || "")
-    .trim()
-    .replace(/\/+$/, "")
-    .replace(/\/wp-json(?:\/.*)?$/i, "");
-
-const normalizeCouponCode = (value) =>
-  cleanText(value, 48)
-    .replace(/\s+/g, "")
-    .toUpperCase();
-
-const couponFailureCode = (code, message = "") => {
-  const source = `${cleanText(code, 120)} ${cleanText(message, 300)}`.toLowerCase();
-
-  if (source.includes("expired") || source.includes("expirado")) {
-    return "COUPON_EXPIRED";
-  }
-
-  if (
-    source.includes("usage_limit") ||
-    source.includes("usage limit") ||
-    source.includes("límite de uso") ||
-    source.includes("limite de uso") ||
-    source.includes("already been used") ||
-    source.includes("ya fue utilizado")
-  ) {
-    return "COUPON_USAGE_LIMIT_REACHED";
-  }
-
-  return "COUPON_INVALID";
-};
-
-async function validateCouponWithWordPress({ code, items, currency, email }) {
-  if (!code) return "";
-
-  const root = normalizeRoot(
-    import.meta.env.WORDPRESS_API_URL ||
-      import.meta.env.WOOCOMMERCE_URL ||
-      import.meta.env.PUBLIC_WOOCOMMERCE_URL,
-  );
-
-  if (!root) {
-    const error = new Error("WordPress is not configured");
-    error.code = "WORDPRESS_NOT_CONFIGURED";
-    throw error;
-  }
-
-  const response = await fetch(`${root}/wp-json/labcore/v1/checkout/validate-coupon`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "User-Agent": "LAB_CORE Secure Coupon Validation",
-      ...(CHECKOUT_API_KEY
-        ? { "X-Labcore-Checkout-Key": CHECKOUT_API_KEY }
-        : {}),
-    },
-    body: JSON.stringify({ code, items, currency, email }),
-    signal: AbortSignal.timeout(8_000),
-  });
-
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || result?.valid !== true) {
-    const error = new Error(result?.message || "Coupon validation failed");
-    error.code = couponFailureCode(result?.code, result?.message);
-    error.status = response.status;
-    throw error;
-  }
-
-  const validatedCode = normalizeCouponCode(result?.coupon?.code || code);
-  if (!validatedCode) {
-    const error = new Error("WordPress returned an invalid coupon code");
-    error.code = "COUPON_INVALID";
-    throw error;
-  }
-
-  return validatedCode;
-}
-
-const reject = (code, status = 400) => paymentJson({ ok: false, code }, status);
-
-const normalizeLine = (line) => {
-  const productId = Number(line?.productId || line?.id || 0);
-  const variationId = Number(line?.variationId || 0);
-  const quantity = Number(line?.quantity || 0);
-
-  if (
-    !Number.isSafeInteger(productId) || productId <= 0 ||
-    !Number.isSafeInteger(variationId) || variationId < 0 ||
-    !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20
-  ) return null;
-
-  return { productId, variationId, quantity };
-};
-
-const normalizeCustomer = (payload) => {
-  const customer = {
-    firstName: cleanText(payload?.firstName, 80),
-    lastName: cleanText(payload?.lastName, 80),
-    email: cleanText(payload?.email, 160).toLowerCase(),
-    phone: cleanText(payload?.phone, 30),
-    country: cleanText(payload?.country, 2).toUpperCase(),
-    address: cleanText(payload?.address, 180),
-    addressExtra: cleanText(payload?.addressExtra, 100),
-    city: cleanText(payload?.city, 100),
-    region: cleanText(payload?.region, 100),
-    postalCode: cleanText(payload?.postalCode, 20),
-    notes: cleanText(payload?.notes, 500),
-  };
-
-  if (
-    customer.firstName.length < 2 ||
-    customer.lastName.length < 2 ||
-    !EMAIL_PATTERN.test(customer.email) ||
-    customer.phone.length < 5 ||
-    !/^[A-Z]{2}$/.test(customer.country) ||
-    customer.address.length < 4 ||
-    customer.city.length < 2 ||
-    customer.region.length < 2 ||
-    customer.postalCode.length < 2
-  ) return null;
-
-  return customer;
-};
-
-const dialCodeForCountry = (country) => ({ CO: "+57", MX: "+52", US: "+1" })[country] || "";
+const metaValue = (order, key) =>
+  order?.meta_data?.find((item) => item?.key === key)?.value;
 
 export async function POST({ request }) {
-  const requestUrl = new URL(request.url);
-  const origin = request.headers.get("origin");
-  if (origin && origin !== requestUrl.origin) return reject("ORIGIN_NOT_ALLOWED", 403);
-
-  const contentLength = Number(request.headers.get("content-length") || 0);
-  if (contentLength > MAX_BODY_BYTES) return reject("PAYLOAD_TOO_LARGE", 413);
-
-  const bold = getBoldConfig();
-  if (!bold.ready) return reject("BOLD_NOT_CONFIGURED", 503);
-
-  let siteOrigin;
-  try {
-    siteOrigin = resolveSiteOrigin(request);
-  } catch (error) {
-    return reject(error.code || "INVALID_SITE_URL", 503);
+  if (Number(request.headers.get("content-length") || 0) > MAX_BODY_BYTES) {
+    return paymentJson({ ok: false, code: "PAYLOAD_TOO_LARGE" }, 413);
   }
 
-  let payload;
+  const rawBody = await request.text();
+  const signature = request.headers.get("x-bold-signature");
+  if (!verifyBoldWebhookSignature({
+    rawBody,
+    signature,
+    secretKey: getBoldWebhookSecret(),
+  })) {
+    return paymentJson({ ok: false, code: "INVALID_SIGNATURE" }, 400);
+  }
+
+  let event;
   try {
-    payload = await request.json();
+    event = JSON.parse(rawBody);
   } catch {
-    return reject("INVALID_JSON");
+    return paymentJson({ ok: false, code: "INVALID_JSON" }, 400);
   }
 
-  const selectedCurrency = cleanText(payload?.currency, 3).toUpperCase();
-  if (!bold.supportedCurrencies.includes(selectedCurrency)) {
-    return reject(selectedCurrency === "MXN" ? "MXN_PAYMENT_NOT_SUPPORTED" : "INVALID_CURRENCY", 422);
+  const eventId = cleanText(event?.id, 100);
+  const eventType = cleanText(event?.type, 40).toUpperCase();
+  const data = event?.data || {};
+  const reference = cleanText(
+    data?.metadata?.reference || data?.reference_id || data?.reference,
+    60,
+  );
+  const wooOrderId = getWooOrderIdFromReference(reference);
+  if (!eventId || !wooOrderId || !["SALE_APPROVED", "SALE_REJECTED", "VOID_APPROVED"].includes(eventType)) {
+    return paymentJson({ ok: false, code: "INVALID_EVENT" }, 422);
   }
-
-  if (payload?.acceptedLegal !== true || cleanText(payload?.legalVersion, 30) !== LEGAL_VERSION) {
-    return reject("LEGAL_ACCEPTANCE_REQUIRED", 422);
-  }
-
-  const customer = normalizeCustomer(payload?.customer);
-  if (!customer) return reject("INVALID_CUSTOMER_DATA", 422);
-
-  let couponCode = normalizeCouponCode(payload?.couponCode);
-
-  if (!Array.isArray(payload?.items) || payload.items.length < 1 || payload.items.length > MAX_LINES) {
-    return reject("INVALID_CART", 422);
-  }
-
-  const lines = payload.items.map(normalizeLine);
-  if (lines.some((line) => !line)) return reject("INVALID_CART", 422);
-
-  const uniqueKeys = new Set(lines.map((line) => `${line.productId}:${line.variationId}`));
-  if (uniqueKeys.size !== lines.length) return reject("DUPLICATE_CART_LINE", 422);
-
-  let quote;
-  let pricedLines;
-  try {
-    quote = await quoteMultiCurrencyCart({ currency: selectedCurrency, items: lines });
-    pricedLines = lines.map((line) => {
-      const quoted = quote.lines.find((item) =>
-        Number(item.product_id) === line.productId &&
-        Number(item.variation_id || 0) === line.variationId
-      );
-      if (!quoted || !Number.isFinite(Number(quoted.unit_price)) || Number(quoted.unit_price) <= 0) {
-        const error = new Error("Currency price missing");
-        error.code = "CURRENCY_PRICE_MISSING";
-        throw error;
-      }
-      return {
-        ...line,
-        unitPrice: Number(quoted.unit_price),
-        lineTotal: Number(quoted.line_total),
-      };
-    });
-  } catch (error) {
-    console.error("Bold checkout multi-currency validation failed:", error.code || error.message);
-    const status = error.status === 409 ? 409 : error.status === 422 ? 422 : 502;
-    return reject(error.code || "CATALOG_VALIDATION_FAILED", status);
-  }
-
-  if (couponCode) {
-    try {
-      couponCode = await validateCouponWithWordPress({
-        code: couponCode,
-        items: lines,
-        currency: selectedCurrency,
-        email: customer.email,
-      });
-    } catch (error) {
-      console.error("Bold checkout coupon validation failed:", error.code || error.message);
-      return reject(error.code || "COUPON_INVALID", error.status === 429 ? 429 : 422);
-    }
-  }
-
-  const customerId = await getAuthenticatedCustomerId(request);
-  const billing = {
-    first_name: customer.firstName,
-    last_name: customer.lastName,
-    address_1: customer.address,
-    address_2: customer.addressExtra,
-    city: customer.city,
-    state: customer.region,
-    postcode: customer.postalCode,
-    country: customer.country,
-    email: customer.email,
-    phone: customer.phone,
-  };
-  const shipping = {
-    first_name: customer.firstName,
-    last_name: customer.lastName,
-    address_1: customer.address,
-    address_2: customer.addressExtra,
-    city: customer.city,
-    state: customer.region,
-    postcode: customer.postalCode,
-    country: customer.country,
-  };
 
   let order;
   try {
-    order = await wooRequest("/orders", {
-      method: "POST",
-      body: {
-        status: "pending",
-        currency: selectedCurrency,
-        customer_id: customerId,
-        payment_method: "bold_embedded",
-        payment_method_title: "Bold Embedded Checkout",
-        billing,
-        shipping,
-        customer_note: customer.notes,
-        line_items: pricedLines.map((line) => ({
-          product_id: line.productId,
-          variation_id: line.variationId || undefined,
-          quantity: line.quantity,
-          subtotal: String(line.lineTotal),
-          total: String(line.lineTotal),
-        })),
-        coupon_lines: couponCode ? [{ code: couponCode }] : [],
-        meta_data: [
-          { key: "_lab_legal_version", value: LEGAL_VERSION },
-          { key: "_lab_research_agreement", value: "accepted" },
-          { key: "_lab_checkout_language", value: cleanText(payload?.language, 2) === "en" ? "en" : "es" },
-          { key: "_lab_checkout_currency", value: selectedCurrency },
-          { key: "_lab_coupon_code", value: couponCode },
-          { key: "_bold_payment_status", value: "CREATED" },
-        ],
-      },
-      headers: { "X-Labcore-Currency": selectedCurrency },
-    });
+    order = await wooRequest(`/orders/${wooOrderId}`);
   } catch (error) {
-    console.error("Bold checkout order creation failed:", error.code || error.message);
-
-    const isCouponFailure = couponCode && (
-      String(error?.code || "").toLowerCase().includes("coupon") ||
-      String(error?.details || "").toLowerCase().includes("coupon") ||
-      String(error?.details || "").toLowerCase().includes("cupón")
-    );
-
-    if (isCouponFailure) {
-      return reject(couponFailureCode(error?.code, error?.details), 422);
-    }
-
-    return reject(error.code || "ORDER_CREATION_FAILED", error.status === 400 ? 422 : 502);
+    console.error("Bold webhook order lookup failed:", error?.code || error?.message);
+    return paymentJson({ ok: false, code: "ORDER_NOT_FOUND" }, error?.status === 404 ? 404 : 502);
   }
 
-  const total = Number(order?.total || 0);
-  const currency = cleanText(order?.currency || selectedCurrency, 3).toUpperCase();
-  const cancelOrder = async (reason) => {
-    try {
-      await wooRequest(`/orders/${order.id}`, {
-        method: "PUT",
-        body: {
-          status: "cancelled",
-          meta_data: [{ key: "_bold_configuration_error", value: reason }],
-        },
-      });
-    } catch {}
-  };
-
-  if (couponCode) {
-    const returnedCoupon = Array.isArray(order?.coupon_lines)
-      ? order.coupon_lines.find(
-          (item) => normalizeCouponCode(item?.code) === couponCode,
-        )
-      : null;
-
-    if (!returnedCoupon) {
-      await cancelOrder("COUPON_NOT_APPLIED");
-      return reject("COUPON_INVALID", 422);
-    }
+  if (cleanText(metaValue(order, "_bold_order_id"), 60) !== reference) {
+    return paymentJson({ ok: false, code: "ORDER_REFERENCE_MISMATCH" }, 409);
+  }
+  if (cleanText(metaValue(order, "_bold_last_event_id"), 100) === eventId) {
+    return paymentJson({ ok: true, duplicate: true });
   }
 
-  if (!Number.isFinite(total) || total <= 0 || !Number.isInteger(total)) {
-    await cancelOrder("BOLD_AMOUNT_MUST_BE_INTEGER");
-    return reject("BOLD_AMOUNT_MUST_BE_INTEGER", 422);
+  const expectedTotal = Number(order?.total || 0);
+  const paidTotal = Number(data?.amount?.total);
+  const expectedCurrency = cleanText(order?.currency, 3).toUpperCase();
+  const paidCurrency = cleanText(data?.amount?.currency || expectedCurrency, 3).toUpperCase();
+  if (
+    !Number.isFinite(paidTotal) ||
+    paidTotal !== expectedTotal ||
+    paidCurrency !== expectedCurrency
+  ) {
+    return paymentJson({ ok: false, code: "PAYMENT_AMOUNT_MISMATCH" }, 409);
   }
-  if (!bold.supportedCurrencies.includes(currency) || currency !== selectedCurrency) {
-    await cancelOrder("BOLD_CURRENCY_MISMATCH");
-    return reject("BOLD_CURRENCY_MISMATCH", 422);
-  }
-  if (currency === "COP" && total < 1000) {
-    await cancelOrder("BOLD_MINIMUM_AMOUNT");
-    return reject("BOLD_MINIMUM_AMOUNT", 422);
-  }
-
-  const amount = String(total);
-  const reference = createBoldReference(order.id);
-  const integritySignature = createIntegritySignature({
-    reference,
-    amount,
-    currency,
-    secretKey: bold.secretKey,
-  });
-
-  const redirectionUrl = new URL("/checkout/result", siteOrigin).toString();
-  const originUrl = new URL("/checkout", siteOrigin).toString();
-  const fullName = `${customer.firstName} ${customer.lastName}`.trim();
-  const customerData = {
-    email: customer.email,
-    fullName,
-    phone: customer.phone,
-  };
-  const dialCode = dialCodeForCountry(customer.country);
-  if (dialCode) customerData.dialCode = dialCode;
-
-  const billingAddress = {
-    address: [customer.address, customer.addressExtra].filter(Boolean).join(", "),
-    zipCode: customer.postalCode,
-    city: customer.city,
-    state: customer.region,
-    country: customer.country,
-  };
 
   try {
-    await wooRequest(`/orders/${order.id}`, {
-      method: "PUT",
-      body: {
-        meta_data: [
-          { key: "_bold_order_id", value: reference },
-          { key: "_bold_payment_status", value: "PENDING" },
-          { key: "_bold_environment", value: bold.environment },
-        ],
-      },
+    order = await updateWooOrderPayment({
+      wooOrderId,
+      reference,
+      status: eventType,
+      transactionId: data?.payment_id || event?.subject,
+      eventId,
+      payerEmail: data?.payer_email,
     });
   } catch (error) {
-    console.error("Bold checkout order reference update failed:", error.code || error.message);
-    return reject("ORDER_UPDATE_FAILED", 502);
+    console.error("Bold webhook WooCommerce update failed:", error?.code || error?.message);
+    return paymentJson({ ok: false, code: "ORDER_STATUS_UPDATE_FAILED" }, 502);
   }
 
-  const checkout = {
-    orderId: reference,
-    currency,
-    amount,
-    apiKey: bold.apiKey,
-    integritySignature,
-    description: `LAB_CORE order ${order.number || order.id} - ${lines.length} research item${lines.length === 1 ? "" : "s"}`.slice(0, 100),
-    redirectionUrl,
-    expirationDate: String(BigInt(Date.now() + 24 * 60 * 60 * 1000) * 1_000_000n),
-    renderMode: "embedded",
-    customerData: JSON.stringify(customerData),
-    billingAddress: JSON.stringify(billingAddress),
-    extraData1: `WOO-${order.id}`,
-    extraData2: `LEGAL-${LEGAL_VERSION}`,
-  };
+  if (eventType === "SALE_APPROVED") {
+    try {
+      await completeOmnisendOrder({ order, request });
+    } catch (error) {
+      console.error("Omnisend webhook completion failed:", error?.details || error?.message);
+    }
+  }
 
-  // Bold requires originUrl to use HTTPS. Its documented localhost exception
-  // applies to redirectionUrl, so omit this optional field during local work.
-  if (new URL(siteOrigin).protocol === "https:") checkout.originUrl = originUrl;
-
-  return paymentJson({
-    ok: true,
-    environment: bold.environment,
-    order: {
-      id: order.id,
-      number: String(order.number || order.id),
-      reference,
-      amount,
-      currency,
-      couponCode: couponCode || null,
-      discount: String(order?.discount_total || "0"),
-    },
-    checkout,
-  });
+  return paymentJson({ ok: true });
 }
 
 export function ALL() {

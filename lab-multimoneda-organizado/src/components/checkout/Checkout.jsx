@@ -287,12 +287,15 @@ export default function Checkout() {
   const { currency, formatMoney, setCurrency } = useCurrency();
   const {
     cartItems,
+    cartId,
     cartReady,
     cartTotal,
     updateQuantity,
     removeFromCart,
     cartPricing,
     cartPricingError,
+    identifyCartContact,
+    markCheckoutStarted,
   } = useCart();
 
   const [formStatus, setFormStatus] = useState("idle");
@@ -376,6 +379,7 @@ export default function Checkout() {
           if (active) setAccountState({ status: "guest", name: "", addressLoaded: false });
           return;
         }
+        identifyCartContact(customer.email);
 
         let filledFields = 0;
         Object.entries(customer).forEach(([name, value]) => {
@@ -396,7 +400,7 @@ export default function Checkout() {
     return () => {
       active = false;
     };
-  }, [cartReady, cartItems.length]);
+  }, [cartReady, cartItems.length, identifyCartContact]);
 
   useEffect(() => {
     if (accountState.status !== "connected") return;
@@ -713,6 +717,7 @@ export default function Checkout() {
     }
 
     const data = new FormData(form);
+    identifyCartContact(data.get("email"));
     setFormStatus("preparing");
     setPaymentError("");
 
@@ -724,6 +729,7 @@ export default function Checkout() {
         body: JSON.stringify({
           language,
           currency,
+          cartId,
           couponCode: appliedCoupon?.code || "",
           rewardPoints: rewards.selected || 0,
           legalVersion: LEGAL_VERSION,
@@ -745,6 +751,11 @@ export default function Checkout() {
             productId: Number(item.id),
             variationId: Number(item.variationId || 0),
             quantity: Number(item.quantity),
+            title: item.name,
+            slug: item.slug,
+            sku: item.sku,
+            imageUrl: item.images?.[0]?.src,
+            variantTitle: item.variantLabel,
           })),
         }),
       });
@@ -763,6 +774,10 @@ export default function Checkout() {
         ...payload.order,
         environment: payload.environment,
       });
+      try {
+        sessionStorage.setItem("bold_pending_order", String(payload.order.reference));
+        sessionStorage.setItem("bold_pending_cart_id", String(cartId || ""));
+      } catch {}
       setFormStatus("ready");
       checkout.open();
     } catch (error) {
@@ -969,6 +984,10 @@ export default function Checkout() {
                     required
                     maxLength={160}
                     placeholder="correo@ejemplo.com"
+                    onBlur={(event) => {
+                      identifyCartContact(event.currentTarget.value);
+                      markCheckoutStarted(event.currentTarget.value);
+                    }}
                     className={inputClass}
                   />
                 </label>

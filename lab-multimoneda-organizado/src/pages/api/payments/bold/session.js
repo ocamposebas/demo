@@ -10,6 +10,13 @@ import {
   resolveSiteOrigin,
   wooRequest,
 } from "../../../../lib/boldPayments.js";
+import {
+  createCartEventProperties,
+  createCartRecoveryToken,
+  normalizeCartId,
+  resolveMarketingOrigin,
+  sendOmnisendEvent,
+} from "../../../../lib/omnisend.js";
 
 export const prerender = false;
 
@@ -77,7 +84,16 @@ const normalizeLine = (line) => {
     !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 20
   ) return null;
 
-  return { productId, variationId, quantity };
+  return {
+    productId,
+    variationId,
+    quantity,
+    title: cleanText(line?.title || line?.name, 180),
+    slug: cleanText(line?.slug, 180),
+    sku: cleanText(line?.sku, 100),
+    imageUrl: cleanText(line?.imageUrl, 1_000),
+    variantTitle: cleanText(line?.variantTitle, 140),
+  };
 };
 
 const normalizeCustomer = (payload) => {
@@ -146,6 +162,7 @@ export async function POST({ request }) {
 
   const customer = normalizeCustomer(payload?.customer);
   if (!customer) return reject("INVALID_CUSTOMER_DATA", 422);
+  const omnisendCartId = normalizeCartId(payload?.cartId);
 
   let couponCode = normalizeCouponCode(payload?.couponCode);
 
@@ -253,6 +270,7 @@ export async function POST({ request }) {
           { key: "_lab_checkout_currency", value: selectedCurrency },
           { key: "_lab_coupon_code", value: couponCode },
           { key: "_bold_payment_status", value: "CREATED" },
+          ...(omnisendCartId ? [{ key: "_lab_omnisend_cart_id", value: omnisendCartId }] : []),
           { key: "_lab_reward_points_redeemed", value: reward?.points || 0 },
           { key: "_lab_reward_discount", value: reward?.discount || 0 },
           { key: "_lab_reward_market_rate", value: reward?.rate || (selectedCurrency === "USD" ? 1 : 0) },
@@ -390,6 +408,33 @@ export async function POST({ request }) {
   // Bold requires originUrl to use HTTPS. Its documented localhost exception
   // applies to redirectionUrl, so omit this optional field during local work.
   if (new URL(siteOrigin).protocol === "https:") checkout.originUrl = originUrl;
+
+  if (omnisendCartId) {
+    try {
+      const marketingOrigin = resolveMarketingOrigin(request);
+      const token = createCartRecoveryToken({
+        cartId: omnisendCartId,
+        currency,
+        lines: pricedLines,
+      });
+      const recoveryUrl = new URL("/checkout", marketingOrigin);
+      recoveryUrl.searchParams.set("recover", token);
+      await sendOmnisendEvent({
+        eventName: "started checkout",
+        email: customer.email,
+        properties: createCartEventProperties({
+          cartId: omnisendCartId,
+          currency,
+          lines: pricedLines,
+          recoveryUrl: recoveryUrl.toString(),
+          origin: marketingOrigin,
+        }),
+      });
+    } catch (error) {
+      // Marketing must never prevent a valid payment session from opening.
+      console.error("Omnisend started-checkout event failed:", error?.details || error?.message);
+    }
+  }
 
   return paymentJson({
     ok: true,
