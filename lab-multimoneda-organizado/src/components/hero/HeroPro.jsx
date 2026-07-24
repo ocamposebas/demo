@@ -70,7 +70,7 @@ export default function HeroPro() {
         </div>
 
         <div className="relative mx-auto block w-full max-w-[510px] animate-[labFadeScale_.8s_.22s_both] lg:justify-self-end">
-          <div className="relative min-h-[360px] overflow-hidden sm:min-h-[500px]">
+          <div className="relative min-h-[420px] overflow-visible sm:min-h-[500px]">
             <div className="pointer-events-none absolute left-1/2 top-[48%] h-[340px] w-[340px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/10 sm:h-[410px] sm:w-[410px]" />
             <div className="pointer-events-none absolute left-1/2 top-[48%] h-[270px] w-[270px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-cyan-300/15 animate-[spin_42s_linear_infinite] sm:h-[330px] sm:w-[330px]" />
             <div className="pointer-events-none absolute left-1/2 top-[48%] h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-[80px]" />
@@ -105,7 +105,7 @@ export default function HeroPro() {
               loading="eager"
               fetchpriority="high"
               decoding="async"
-              className="absolute bottom-8 left-1/2 z-10 h-[320px] w-auto -translate-x-1/2 object-contain drop-shadow-[0_28px_42px_rgba(0,0,0,.55)] sm:h-[445px]"
+              className="absolute inset-x-0 bottom-12 top-2 z-10 mx-auto h-[350px] max-h-[calc(100%-3.5rem)] w-full max-w-full object-contain object-center drop-shadow-[0_28px_42px_rgba(0,0,0,.55)] sm:bottom-8 sm:h-[445px]"
             />
 
             <div className="absolute inset-x-8 bottom-0 z-30 flex items-center justify-center gap-2 border-t border-cyan-300/15 pt-3 font-sans text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400 sm:inset-x-14">

@@ -84,9 +84,15 @@ export default function Footer() {
       try {
         window.localStorage.setItem("lab_rewards_popup_subscribed", "true");
       } catch {}
-    } catch {
+    } catch (error) {
       setNewsletterStatus("error");
-      setNewsletterMessage(newsletter.error);
+      setNewsletterMessage(
+        error?.message === "NOT_CONFIGURED"
+          ? language === "es"
+            ? "El servicio de suscripción se está configurando. Inténtalo nuevamente en unos minutos."
+            : "The subscription service is being configured. Please try again in a few minutes."
+          : newsletter.error,
+      );
     }
   };
 

@@ -1,3 +1,5 @@
+import { isAllowedRequestOrigin } from "../../../lib/boldPayments.js";
+
 export const prerender = false;
 
 const OMNISEND_CONTACTS_URL = "https://api.omnisend.com/api/contacts";
@@ -16,8 +18,7 @@ const json = (body, status = 200, headers = {}) =>
   });
 
 export async function POST({ request }) {
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) {
+  if (!isAllowedRequestOrigin(request)) {
     return json({ ok: false, code: "ORIGIN_NOT_ALLOWED" }, 403);
   }
 
@@ -88,7 +89,12 @@ export async function POST({ request }) {
       return json({ ok: true, new_subscriber: response.status === 201 });
     }
 
-    console.error("Omnisend contact subscription failed:", response.status);
+    const providerError = await response.text().catch(() => "");
+    console.error(
+      "Omnisend contact subscription failed:",
+      response.status,
+      providerError.slice(0, 500),
+    );
     if ([401, 403, 410].includes(response.status)) {
       return json({ ok: false, code: "NOT_CONFIGURED" }, 503);
     }

@@ -14,8 +14,8 @@ import { useLanguage } from "../../i18n/LanguageContext.jsx";
 const DISMISSED_AT_KEY = "lab_rewards_popup_dismissed_at";
 const SUBSCRIBED_KEY = "lab_rewards_popup_subscribed";
 const DISMISS_FOR_MS = 30 * 24 * 60 * 60 * 1000;
-const OPEN_DELAY_MS = 30_000;
-const SCROLL_ENGAGEMENT_DELAY_MS = 8_000;
+const OPEN_DELAY_MS = 8_000;
+const SCROLL_ENGAGEMENT_DELAY_MS = 2_500;
 const EXCLUDED_PATHS = [
   "/checkout",
   "/cuenta",
@@ -148,11 +148,18 @@ export default function RewardsSignupPopup() {
     };
 
     scheduleWhenReady();
+    const handleManualOpen = () => {
+      window.clearTimeout(openTimer);
+      window.clearTimeout(readinessTimer);
+      openPopup();
+    };
+    window.addEventListener("lab:open-rewards-popup", handleManualOpen);
     window.addEventListener("lab:age-accepted", scheduleWhenReady, { once: true });
     return () => {
       window.clearTimeout(openTimer);
       window.clearTimeout(readinessTimer);
       window.removeEventListener("scroll", handleEngagedScroll);
+      window.removeEventListener("lab:open-rewards-popup", handleManualOpen);
       window.removeEventListener("lab:age-accepted", scheduleWhenReady);
     };
   }, []);
@@ -199,9 +206,15 @@ export default function RewardsSignupPopup() {
 
       safeStorageSet(SUBSCRIBED_KEY, "true");
       setStatus(payload.new_subscriber ? "success" : "existing");
-    } catch {
+    } catch (error) {
       setStatus("error");
-      setMessage(c.error);
+      setMessage(
+        error?.message === "NOT_CONFIGURED"
+          ? language === "es"
+            ? "El servicio de suscripción se está configurando. Inténtalo nuevamente en unos minutos."
+            : "The subscription service is being configured. Please try again in a few minutes."
+          : c.error,
+      );
     }
   };
 

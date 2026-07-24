@@ -1,10 +1,11 @@
-import { BadgeCheck, CreditCard, Truck } from "lucide-react";
+import { BadgeCheck, CreditCard, Gift, Truck } from "lucide-react";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 export default function AnnouncementBar() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const announcements = t("announcements");
   const items = [
+    [Gift, language === "es" ? "Obtén 10% de bienvenida" : "Get 10% welcome discount", true],
     [BadgeCheck, announcements[2]],
     [Truck, announcements[1]],
     [CreditCard, announcements[3]],
@@ -18,16 +19,23 @@ export default function AnnouncementBar() {
       <div className="lab-announcement-track flex h-full min-w-max items-center">
         {[0, 1].map((copyIndex) => (
           <div key={copyIndex} className="flex h-full shrink-0 items-center" aria-hidden={copyIndex === 1 ? "true" : undefined}>
-            {[0, 1].map((repeatIndex) => items.map(([Icon, label]) => (
-              <div
+            {[0, 1].map((repeatIndex) => items.map(([Icon, label, opensOffer]) => (
+              <button
+                type="button"
                 key={`${copyIndex}-${repeatIndex}-${label}`}
+                onClick={
+                  opensOffer && copyIndex === 0 && repeatIndex === 0
+                    ? () => window.dispatchEvent(new CustomEvent("lab:open-rewards-popup"))
+                    : undefined
+                }
                 className="flex min-w-max items-center gap-2 px-8 font-sans text-[11px] font-semibold text-slate-300 sm:px-14"
-                aria-hidden={copyIndex === 0 && repeatIndex === 1 ? "true" : undefined}
+                aria-hidden={copyIndex > 0 || repeatIndex === 1 ? "true" : undefined}
+                tabIndex={copyIndex > 0 || repeatIndex === 1 || !opensOffer ? -1 : 0}
               >
                   <Icon size={13} className="shrink-0 text-cyan-300" />
                   <span className="whitespace-nowrap">{label}</span>
                   <span className="ml-6 h-1 w-1 rounded-full bg-cyan-300/50 sm:ml-10" aria-hidden="true" />
-              </div>
+              </button>
             )))}
           </div>
         ))}
