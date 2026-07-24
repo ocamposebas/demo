@@ -541,6 +541,8 @@ export default function Checkout() {
     const messages =
       language === "es"
         ? {
+            ORIGIN_NOT_ALLOWED:
+              "El dominio de la tienda no está autorizado por el servidor de pagos. Revisa la configuración del dominio e inténtalo nuevamente.",
             BOLD_NOT_CONFIGURED:
               "Bold todavía no está configurado. Agrega las llaves de identidad y secreta en las variables del servidor.",
             PRODUCT_UNAVAILABLE:
@@ -570,6 +572,8 @@ export default function Checkout() {
               "Este cupón ya alcanzó su límite de uso.",
           }
         : {
+            ORIGIN_NOT_ALLOWED:
+              "The store domain is not authorized by the payment server. Review the domain configuration and try again.",
             BOLD_NOT_CONFIGURED:
               "Bold is not configured yet. Add the identity and secret keys to the server environment.",
             PRODUCT_UNAVAILABLE:

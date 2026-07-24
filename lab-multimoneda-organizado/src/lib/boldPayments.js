@@ -213,6 +213,42 @@ export const resolveSiteOrigin = (request) => {
   return url.origin;
 };
 
+export const isAllowedRequestOrigin = (request) => {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  const allowedOrigins = new Set();
+  const addOrigin = (value) => {
+    try {
+      allowedOrigins.add(new URL(value).origin);
+    } catch {}
+  };
+
+  addOrigin(request.url);
+  addOrigin(import.meta.env.SITE_URL);
+
+  const forwardedHost = String(
+    request.headers.get("x-forwarded-host") || request.headers.get("host") || "",
+  )
+    .split(",")[0]
+    .trim();
+  const forwardedProto = String(
+    request.headers.get("x-forwarded-proto") || "https",
+  )
+    .split(",")[0]
+    .trim();
+
+  if (forwardedHost && ["http", "https"].includes(forwardedProto)) {
+    addOrigin(`${forwardedProto}://${forwardedHost}`);
+  }
+
+  try {
+    return allowedOrigins.has(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+};
+
 export const getBoldWebhookSecret = () => {
   const explicit = import.meta.env.BOLD_WEBHOOK_SECRET;
   const bold = getBoldConfig();

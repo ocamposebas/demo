@@ -4,6 +4,7 @@ import {
   createIntegritySignature,
   getAuthenticatedCustomerId,
   getBoldConfig,
+  isAllowedRequestOrigin,
   paymentJson,
   quoteMultiCurrencyCart,
   resolveSiteOrigin,
@@ -112,9 +113,7 @@ const normalizeCustomer = (payload) => {
 const dialCodeForCountry = (country) => ({ CO: "+57", MX: "+52", US: "+1" })[country] || "";
 
 export async function POST({ request }) {
-  const requestUrl = new URL(request.url);
-  const origin = request.headers.get("origin");
-  if (origin && origin !== requestUrl.origin) return reject("ORIGIN_NOT_ALLOWED", 403);
+  if (!isAllowedRequestOrigin(request)) return reject("ORIGIN_NOT_ALLOWED", 403);
 
   const contentLength = Number(request.headers.get("content-length") || 0);
   if (contentLength > MAX_BODY_BYTES) return reject("PAYLOAD_TOO_LARGE", 413);
