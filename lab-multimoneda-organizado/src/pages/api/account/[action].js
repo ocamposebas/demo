@@ -28,18 +28,25 @@ const ACTION_PATHS = {
   "rewards-release": "rewards/release",
 };
 
-const json = (body, status = 200, headers = {}) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store, private",
-      "Pragma": "no-cache",
-      "Expires": "0",
-      "Vary": "Cookie",
-      ...headers,
-    },
+const json = (body, status = 200, headers = {}, cookies = []) => {
+  const responseHeaders = new Headers({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store, private",
+    "Pragma": "no-cache",
+    "Expires": "0",
+    "Vary": "Cookie",
+    ...headers,
   });
+
+  for (const cookie of cookies) {
+    responseHeaders.append("Set-Cookie", cookie);
+  }
+
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: responseHeaders,
+  });
+};
 
 const getCookie = (request, name) => {
   const source = request.headers.get("cookie") || "";
@@ -57,22 +64,41 @@ const getCookie = (request, name) => {
   }
 };
 
-const cookieHeader = (request, token = "", maxAge = 0) => {
+const cookieHeader = (
+  request,
+  token = "",
+  maxAge = 0,
+  { path = "/", domain = "" } = {}
+) => {
   const requestUrl = new URL(request.url);
   const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
   const secure = requestUrl.protocol === "https:" || forwardedProtocol === "https";
   const parts = [
     `${COOKIE_NAME}=${encodeURIComponent(token)}`,
-    "Path=/",
+    `Path=${path}`,
     "HttpOnly",
     "SameSite=Lax",
     `Max-Age=${Math.max(0, Math.floor(maxAge))}`,
   ];
 
+  if (domain) parts.push(`Domain=${domain}`);
   if (maxAge <= 0) parts.push("Expires=Thu, 01 Jan 1970 00:00:00 GMT");
   if (secure) parts.push("Secure");
 
   return parts.join("; ");
+};
+
+const logoutCookieHeaders = (request) => {
+  const hostname = new URL(request.url).hostname.toLowerCase();
+  const paths = ["/", "/cuenta", "/api"];
+  const domains =
+    hostname === "labcorepep.com" || hostname.endsWith(".labcorepep.com")
+      ? ["", "labcorepep.com"]
+      : [""];
+
+  return domains.flatMap((domain) =>
+    paths.map((path) => cookieHeader(request, "", 0, { path, domain }))
+  );
 };
 
 const normalizeWordPressRoot = (value) =>
@@ -90,10 +116,12 @@ async function handle({ request, params }) {
   }
 
   const respond = (body, status = 200, headers = {}) =>
-    json(body, status, {
-      ...(action === "logout" ? { "Set-Cookie": cookieHeader(request) } : {}),
-      ...headers,
-    });
+    json(
+      body,
+      status,
+      headers,
+      action === "logout" ? logoutCookieHeaders(request) : []
+    );
 
   if (!ACTIONS[action].includes(method)) {
     return respond({ ok: false, code: "METHOD_NOT_ALLOWED" }, 405, {
@@ -189,13 +217,7 @@ async function handle({ request, params }) {
     payload = { ok: false, code: "ACCOUNT_API_NOT_CONFIGURED" };
   }
 
-  const responseHeaders = {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store, private",
-    "Pragma": "no-cache",
-    "Expires": "0",
-    "Vary": "Cookie",
-  };
+  const responseCookies = [];
 
   if (upstream.ok && payload?.token) {
     const token = String(payload.token);
@@ -205,11 +227,11 @@ async function handle({ request, params }) {
     );
     payload = { ...payload };
     delete payload.token;
-    responseHeaders["Set-Cookie"] = cookieHeader(request, token, maxAge);
+    responseCookies.push(cookieHeader(request, token, maxAge));
   }
 
   if (action === "logout" || upstream.status === 401) {
-    responseHeaders["Set-Cookie"] = cookieHeader(request);
+    responseCookies.push(...logoutCookieHeaders(request));
   }
 
   const responsePayload = action === "logout"
@@ -217,10 +239,7 @@ async function handle({ request, params }) {
     : payload;
   const responseStatus = action === "logout" ? 200 : upstream.status;
 
-  return new Response(JSON.stringify(responsePayload), {
-    status: responseStatus,
-    headers: responseHeaders,
-  });
+  return json(responsePayload, responseStatus, {}, responseCookies);
 }
 
 export const GET = handle;
