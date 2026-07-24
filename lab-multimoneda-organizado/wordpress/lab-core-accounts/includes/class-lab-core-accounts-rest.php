@@ -325,7 +325,19 @@ class LAB_Core_Accounts_REST {
 		reset_password( $user, $password );
 		LAB_Core_Accounts_Sessions::revoke_all( $user->ID );
 
-		return self::success();
+		$session = LAB_Core_Accounts_Sessions::issue( $user->ID );
+		if ( is_wp_error( $session ) ) {
+			return self::error( 'SESSION_CREATE_FAILED', __( 'The password changed, but a new session could not be created. Please sign in.', 'lab-core-accounts' ), 500 );
+		}
+
+		return self::success(
+			array(
+				'user'       => self::user_payload( $user->ID ),
+				'token'      => $session['token'],
+				'expires_in' => $session['expires_in'],
+				'expires_at' => $session['expires_at'],
+			)
+		);
 	}
 
 	public static function change_password( WP_REST_Request $request ) {
@@ -643,29 +655,46 @@ class LAB_Core_Accounts_REST {
 
 		if ( 'en' === $language ) {
 			$subject = 'Your LAB_CORE account is ready';
-			$message = "Hello {$user->first_name},\n\nYour LAB_CORE account is now active.";
+			$title   = 'Welcome to LAB_CORE';
+			$intro   = "Hello {$user->first_name}, your secure account is now active. You can review orders, save shipping details, and manage your access from one place.";
+			$label   = 'Open my account';
+			$code_title = 'YOUR PERSONAL WELCOME CODE';
 			if ( is_array( $discount ) ) {
-				$message .= "\n\nYour personal {$discount['percent']}% welcome code is: {$discount['code']}";
-				$message .= "\nValid until: " . wp_date( get_option( 'date_format' ), strtotime( $discount['expires_at'] ) );
+				$code_title .= ' · ' . absint( $discount['percent'] ) . '% OFF';
 			}
-			$message .= "\n\nSign in and use your code at checkout:\nhttps://labcorepep.com/cuenta";
-			$message .= "\n\nResearch use only. Not for human or veterinary use.";
+			$expires_label = 'Valid until';
 		} else {
 			$subject = 'Tu cuenta LAB_CORE está lista';
-			$message = "Hola {$user->first_name},\n\nTu cuenta LAB_CORE ya está activa.";
+			$title   = 'Bienvenido a LAB_CORE';
+			$intro   = "Hola {$user->first_name}, tu cuenta segura ya está activa. Desde ella puedes consultar pedidos, guardar tus datos de entrega y administrar tu acceso.";
+			$label   = 'Abrir mi cuenta';
+			$code_title = 'TU CÓDIGO PERSONAL DE BIENVENIDA';
 			if ( is_array( $discount ) ) {
-				$message .= "\n\nTu código personal de bienvenida del {$discount['percent']}% es: {$discount['code']}";
-				$message .= "\nVálido hasta: " . wp_date( get_option( 'date_format' ), strtotime( $discount['expires_at'] ) );
+				$code_title .= ' · ' . absint( $discount['percent'] ) . '% DE DESCUENTO';
 			}
-			$message .= "\n\nInicia sesión y usa tu código en el checkout:\nhttps://labcorepep.com/cuenta";
-			$message .= "\n\nSolo para investigación. No apto para uso humano ni veterinario.";
+			$expires_label = 'Válido hasta';
 		}
 
+		$code    = is_array( $discount ) ? sanitize_text_field( $discount['code'] ) : '';
+		$expires = is_array( $discount ) && ! empty( $discount['expires_at'] )
+			? $expires_label . ': ' . wp_date( get_option( 'date_format' ), strtotime( $discount['expires_at'] ) )
+			: '';
+		$message = self::email_template(
+			'LAB_CORE // ACCOUNT',
+			$title,
+			$intro,
+			$label,
+			'https://labcorepep.com/cuenta',
+			$code_title,
+			$code,
+			$expires,
+			$language
+		);
 		$sent = wp_mail(
 			$user->user_email,
 			$subject,
 			$message,
-			array( 'From: LAB_CORE <info@labcorepep.com>' )
+			self::email_headers()
 		);
 		if ( ! $sent ) {
 			error_log( 'LAB_CORE Accounts could not hand the welcome email to wp_mail().' );
@@ -685,21 +714,81 @@ class LAB_Core_Accounts_REST {
 
 		if ( 'en' === $language ) {
 			$subject = 'Reset your LAB_CORE password';
-			$message = "A password reset was requested for your LAB_CORE account.\n\nThis link is unique and stops working after it is used or expires.\n\nCreate a new password here:\n{$url}\n\nIf you did not request this, you can ignore this email.";
+			$title   = 'Create a new password';
+			$intro   = 'We received a request to reset your LAB_CORE password. This secure link is unique and stops working after it is used or expires.';
+			$label   = 'Create new password';
+			$notice  = 'If you did not request this change, ignore this email. Your current password will remain active.';
+			$security_label = 'UNIQUE SECURE LINK';
 		} else {
 			$subject = 'Restablece tu contraseña de LAB_CORE';
-			$message = "Recibimos una solicitud para restablecer la contraseña de tu cuenta LAB_CORE.\n\nEste enlace es único y dejará de funcionar después de usarlo o cuando expire.\n\nCrea una contraseña nueva aquí:\n{$url}\n\nSi no hiciste esta solicitud, puedes ignorar este correo.";
+			$title   = 'Crea una contraseña nueva';
+			$intro   = 'Recibimos una solicitud para restablecer tu contraseña de LAB_CORE. Este enlace seguro es único y dejará de funcionar después de usarlo o cuando expire.';
+			$label   = 'Crear nueva contraseña';
+			$notice  = 'Si no solicitaste este cambio, ignora este correo. Tu contraseña actual seguirá funcionando.';
+			$security_label = 'ENLACE SEGURO DE UN SOLO USO';
 		}
 
+		$message = self::email_template(
+			'LAB_CORE // SECURITY',
+			$title,
+			$intro,
+			$label,
+			$url,
+			$security_label,
+			'',
+			$notice,
+			$language
+		);
 		$sent = wp_mail(
 			$user->user_email,
 			$subject,
 			$message,
-			array( 'From: LAB_CORE <info@labcorepep.com>' )
+			self::email_headers()
 		);
 		if ( ! $sent ) {
 			error_log( 'LAB_CORE Accounts could not hand the password reset email to wp_mail().' );
 		}
+	}
+
+	private static function email_headers() {
+		return array(
+			'Content-Type: text/html; charset=UTF-8',
+			'From: LAB_CORE <info@labcorepep.com>',
+			'Reply-To: LAB_CORE Support <info@labcorepep.com>',
+		);
+	}
+
+	private static function email_template( $eyebrow, $title, $intro, $button_label, $button_url, $highlight_title = '', $highlight_value = '', $note = '', $language = 'es' ) {
+		$safe_url = esc_url( $button_url );
+		$fallback = 'en' === $language ? 'If the button does not open, copy this link:' : 'Si el botón no abre, copia este enlace:';
+		$compliance = 'en' === $language
+			? 'Laboratory research only · Not for human or veterinary use.'
+			: 'Solo para investigación de laboratorio · No apto para uso humano ni veterinario.';
+		$highlight = '';
+		if ( $highlight_title || $highlight_value ) {
+			$highlight = '<div style="margin:28px 0;padding:22px;border:1px solid #164e63;background:#071526;text-align:center;">'
+				. '<div style="font-size:11px;line-height:18px;letter-spacing:1.5px;color:#67e8f9;font-weight:700;">' . esc_html( $highlight_title ) . '</div>'
+				. ( $highlight_value ? '<div style="margin-top:10px;font-family:Consolas,Monaco,monospace;font-size:26px;line-height:34px;letter-spacing:2px;color:#ffffff;font-weight:800;">' . esc_html( $highlight_value ) . '</div>' : '' )
+				. '</div>';
+		}
+
+		return '<!doctype html><html><body style="margin:0;padding:0;background:#020617;color:#dbeafe;font-family:Arial,Helvetica,sans-serif;">'
+			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#020617;"><tr><td align="center" style="padding:28px 12px;">'
+			. '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;border:1px solid #164e63;background:#040c1c;">'
+			. '<tr><td style="height:4px;background:#67e8f9;font-size:0;">&nbsp;</td></tr>'
+			. '<tr><td style="padding:28px 34px 18px;border-bottom:1px solid #10283d;">'
+			. '<div style="font-size:21px;line-height:28px;letter-spacing:2px;color:#ffffff;font-weight:800;">LAB_<span style="color:#67e8f9;">CORE</span></div>'
+			. '<div style="margin-top:8px;font-size:10px;line-height:16px;letter-spacing:1.8px;color:#22d3ee;font-weight:700;">' . esc_html( $eyebrow ) . '</div>'
+			. '</td></tr><tr><td style="padding:34px;">'
+			. '<h1 style="margin:0;font-size:28px;line-height:36px;color:#ffffff;font-weight:800;">' . esc_html( $title ) . '</h1>'
+			. '<p style="margin:18px 0 0;font-size:15px;line-height:25px;color:#a8b6cc;">' . esc_html( $intro ) . '</p>'
+			. $highlight
+			. '<div style="margin:30px 0;text-align:center;"><a href="' . $safe_url . '" style="display:inline-block;padding:15px 24px;background:#67e8f9;color:#020617;text-decoration:none;font-size:13px;line-height:18px;font-weight:800;letter-spacing:.6px;">' . esc_html( $button_label ) . '</a></div>'
+			. ( $note ? '<p style="margin:22px 0 0;padding:16px;border-left:3px solid #164e63;background:#06101f;font-size:12px;line-height:20px;color:#8090a7;">' . esc_html( $note ) . '</p>' : '' )
+			. '<p style="margin:24px 0 0;font-size:11px;line-height:18px;color:#64748b;">' . esc_html( $fallback ) . '<br><a href="' . $safe_url . '" style="color:#67e8f9;word-break:break-all;">' . esc_html( $button_url ) . '</a></p>'
+			. '</td></tr><tr><td style="padding:20px 34px;border-top:1px solid #10283d;font-size:10px;line-height:17px;color:#64748b;">'
+			. 'LAB_CORE · <a href="mailto:info@labcorepep.com" style="color:#67e8f9;text-decoration:none;">info@labcorepep.com</a><br>' . esc_html( $compliance )
+			. '</td></tr></table></td></tr></table></body></html>';
 	}
 
 	private static function rate_limit( $bucket, $limit, $window, $identity = '' ) {

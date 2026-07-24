@@ -4,7 +4,7 @@ Tags: customer accounts, woocommerce, rest api, password reset
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,6 +68,11 @@ The raw token is returned only when a session is created. Storefront application
 * wp_mail() accepting a message does not guarantee delivery. Configure and monitor SMTP separately.
 
 == Changelog ==
+
+= 1.0.8 =
+* Replace plain-text account emails with responsive branded HTML templates.
+* Start a fresh secure session automatically after a successful password reset.
+* Improve recovery response handling when WordPress accepted the request but emitted a malformed response.
 
 = 1.0.7 =
 * Send the personal welcome coupon, expiration date, and account link in the registration email.

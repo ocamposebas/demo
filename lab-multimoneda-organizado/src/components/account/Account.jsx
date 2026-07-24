@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -134,7 +134,7 @@ const COPY = {
     expires: "Vence",
     pendingCoupon: "El beneficio se mostrará aquí cuando WooCommerce lo genere.",
     resetSent: "Si encontramos una cuenta con ese correo, recibirás el enlace de recuperación en unos minutos.",
-    resetDone: "Contraseña actualizada. Ya puedes iniciar sesión.",
+    resetDone: "Contraseña actualizada. Tu nueva sesión segura ya está activa.",
     accountCreated: "Cuenta creada correctamente. Enviamos tu cupón personal de bienvenida al correo registrado.",
     loggedIn: "Sesión iniciada correctamente.",
     unavailableTitle: "Servicio de cuenta no disponible",
@@ -263,7 +263,7 @@ const COPY = {
     expires: "Expires",
     pendingCoupon: "Your benefit will appear here when WooCommerce generates it.",
     resetSent: "If an account matches that email, you will receive a recovery link in a few minutes.",
-    resetDone: "Password updated. You can now sign in.",
+    resetDone: "Password updated. Your new secure session is now active.",
     accountCreated: "Account created. We sent your personal welcome coupon to the registered email.",
     loggedIn: "You are now signed in.",
     unavailableTitle: "Account service unavailable",
@@ -415,16 +415,20 @@ export default function Account() {
   const [registerPassword, setRegisterPassword] = useState("");
   const [resetPassword, setResetPassword] = useState("");
   const [securityPassword, setSecurityPassword] = useState("");
+  const sessionRequestRef = useRef(0);
 
   const errorMessage = (error) => c.errors[error?.code] || c.errors.DEFAULT;
 
   const checkSession = async () => {
+    const requestId = ++sessionRequestRef.current;
     setAuthState("loading");
     try {
       const payload = await accountRequest("me", { method: "GET" });
+      if (requestId !== sessionRequestRef.current) return;
       setUser(payload.user);
       setAuthState("authenticated");
     } catch (error) {
+      if (requestId !== sessionRequestRef.current) return;
       setUser(null);
       setAuthState(error.code === "ACCOUNT_API_NOT_CONFIGURED" || error.code === "ACCOUNT_API_UNAVAILABLE" ? "unavailable" : "guest");
     }
@@ -447,6 +451,7 @@ export default function Account() {
 
   useEffect(() => {
     const syncSession = (event) => {
+      sessionRequestRef.current++;
       const nextUser = event.detail?.user || null;
       if (nextUser) {
         setUser(nextUser);
@@ -522,6 +527,7 @@ export default function Account() {
 
   const submitLogin = async (event) => {
     event.preventDefault();
+    sessionRequestRef.current++;
     setBusy(true);
     setFeedback(null);
     const data = new FormData(event.currentTarget);
@@ -541,6 +547,7 @@ export default function Account() {
 
   const submitRegister = async (event) => {
     event.preventDefault();
+    sessionRequestRef.current++;
     const form = event.currentTarget;
     const data = new FormData(form);
     if (data.get("password") !== data.get("confirm_password")) {
@@ -593,6 +600,7 @@ export default function Account() {
 
   const submitReset = async (event) => {
     event.preventDefault();
+    sessionRequestRef.current++;
     const data = new FormData(event.currentTarget);
     if (data.get("password") !== data.get("confirm_password")) {
       setFeedback({ type: "error", message: c.errors.PASSWORD_MISMATCH });
@@ -601,11 +609,14 @@ export default function Account() {
     setBusy(true);
     setFeedback(null);
     try {
-      await accountRequest("reset-password", { body: { ...resetData, password: data.get("password") } });
+      const payload = await accountRequest("reset-password", { body: { ...resetData, password: data.get("password") } });
       window.history.replaceState({}, "", "/cuenta");
       setResetData({ key: "", login: "" });
       setResetPassword("");
-      setView("login");
+      setUser(payload.user);
+      setAuthState("authenticated");
+      setActivePanel("overview");
+      broadcastAccountSession(payload.user);
       setFeedback({ type: "success", message: c.resetDone });
     } catch (error) {
       setFeedback({ type: "error", message: errorMessage(error) });

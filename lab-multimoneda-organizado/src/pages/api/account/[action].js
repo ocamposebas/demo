@@ -157,7 +157,9 @@ async function handle({ request, params }) {
   try {
     payload = await upstream.json();
   } catch {
-    payload = { ok: false, code: "INVALID_UPSTREAM_RESPONSE" };
+    payload = action === "forgot-password" && upstream.ok
+      ? { ok: true }
+      : { ok: false, code: "INVALID_UPSTREAM_RESPONSE" };
   }
 
   if (
