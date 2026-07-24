@@ -23,33 +23,58 @@ import ProductCard from "../catalog/ProductCard.jsx";
 import SectionHeading from "../ui/SectionHeading.jsx";
 import { CoaViewer, coaText } from "../coa/CoaLibrary.jsx";
 
-const MG_PATTERN = /\d+(?:[.,]\d+)?\s*mg\b/i;
+const PRESENTATION_PATTERN = /\d+(?:[.,]\d+)?\s*(?:mcg|mg|ml|g|iu|ui)\b/i;
 
-function getDoseAmount(label = "") {
-  const match = String(label).match(MG_PATTERN);
+function normalizePresentationLabel(value = "") {
+  const cleanValue = String(value).trim();
+  const match = cleanValue.match(PRESENTATION_PATTERN);
+
+  if (!match) return cleanValue.toUpperCase();
+
+  return match[0]
+    .replace(/\s+/g, "")
+    .replace(/^(\d+(?:[.,]\d+)?)([a-z]+)$/i, "$1 $2")
+    .toUpperCase();
+}
+
+function getPresentationAmount(label = "") {
+  const match = String(label).match(PRESENTATION_PATTERN);
   if (!match) return Number.POSITIVE_INFINITY;
 
-  return Number.parseFloat(match[0].replace(/\s*mg\b/i, "").replace(",", "."));
+  return Number.parseFloat(match[0].replace(/[^\d.,]/g, "").replace(",", "."));
 }
 
 function sortDoseOptions(options) {
-  return options.sort((a, b) => getDoseAmount(a.label) - getDoseAmount(b.label));
+  return options.sort(
+    (a, b) => getPresentationAmount(a.label) - getPresentationAmount(b.label)
+  );
 }
 
 function getDoseLabel(attributes = [], fallback = "") {
   for (const attribute of attributes) {
     const option = String(attribute?.option || "").trim();
     const name = String(attribute?.name || "").trim();
-    const match = option.match(MG_PATTERN);
+    const match = option.match(PRESENTATION_PATTERN);
 
-    if (match) return match[0].replace(/\s+/g, " ").toUpperCase();
+    if (match) return normalizePresentationLabel(match[0]);
 
     if (/\b(mg|strength|dose|dosage)\b/i.test(name) && option) {
       return /mg/i.test(option) ? option.toUpperCase() : `${option} MG`;
     }
+
+    if (/\b(presentaci[oó]n|presentation|size|volume|format|formato)\b/i.test(name) && option) {
+      return normalizePresentationLabel(option);
+    }
   }
 
-  return fallback.match(MG_PATTERN)?.[0]?.toUpperCase() || "STANDARD";
+  const firstOption = attributes
+    .map((attribute) => String(attribute?.option || "").trim())
+    .find(Boolean);
+
+  if (firstOption) return normalizePresentationLabel(firstOption);
+
+  const fallbackMatch = String(fallback).match(PRESENTATION_PATTERN);
+  return fallbackMatch ? normalizePresentationLabel(fallbackMatch[0]) : "STANDARD";
 }
 
 function getProductDoseOptions(product, variations) {
@@ -75,16 +100,26 @@ function getProductDoseOptions(product, variations) {
     })));
   }
 
-  const doseAttribute = product?.attributes?.find((attribute) => {
+  const presentationAttribute = product?.attributes?.find((attribute) => {
     const name = String(attribute?.name || "");
-    return /\b(mg|strength|dose|dosage)\b/i.test(name);
+    return (
+      /\b(mg|strength|dose|dosage|presentaci[oó]n|presentation|size|volume|format|formato)\b/i.test(name) ||
+      attribute?.options?.some((option) => PRESENTATION_PATTERN.test(String(option)))
+    );
   });
 
-  if (doseAttribute?.options?.length > 0) {
-    return sortDoseOptions(doseAttribute.options.map((option, index) => ({
+  if (presentationAttribute?.options?.length > 0) {
+    const isDoseAttribute = /\b(mg|strength|dose|dosage)\b/i.test(
+      String(presentationAttribute.name || "")
+    );
+
+    return sortDoseOptions(presentationAttribute.options.map((option, index) => ({
       key: `dose-${option}`,
       variationId: null,
-      label: /mg/i.test(option) ? String(option).toUpperCase() : `${option} MG`,
+      label:
+        isDoseAttribute && !PRESENTATION_PATTERN.test(String(option))
+          ? `${option} MG`
+          : normalizePresentationLabel(option),
       source: product,
       priceMap: product?.labcore_multicurrency?.all_prices || {},
       price: product.price,
@@ -432,7 +467,7 @@ export default function ProductDetail({ product, variations = [], featuredProduc
                 </div>
               </div>
 
-              <div className={`mt-4 grid gap-2.5 ${hasMultipleOptions ? "grid-cols-2 sm:grid-cols-3" : "max-w-[300px] grid-cols-1"}`}>
+              <div className={`mt-5 grid gap-3 ${hasMultipleOptions ? "grid-cols-1 sm:grid-cols-2" : "max-w-[340px] grid-cols-1"}`}>
                 {options.map((option) => {
                   const active = option.key === selected?.key;
                   const available = option.stockStatus === "instock";
@@ -444,21 +479,23 @@ export default function ProductDetail({ product, variations = [], featuredProduc
                       type="button"
                       onClick={() => setSelectedKey(option.key)}
                       aria-pressed={active}
-                      className={`relative min-h-[76px] rounded-xl border px-3 py-3 text-left transition-all ${active ? "border-cyan-300/55 bg-cyan-300/[0.11] text-white shadow-[0_8px_24px_rgba(6,182,212,0.1)]" : "border-white/10 bg-[#07162a]/80 text-white hover:border-cyan-300/35 hover:bg-cyan-300/[0.06]"}`}
+                      className={`relative flex min-h-[96px] flex-col justify-between rounded-xl border p-4 text-left transition-all ${active ? "border-cyan-300/60 bg-cyan-300/[0.11] text-white shadow-[0_10px_28px_rgba(6,182,212,0.12)]" : "border-white/10 bg-[#07162a]/80 text-white hover:border-cyan-300/35 hover:bg-cyan-300/[0.06]"}`}
                     >
-                      <span className="flex items-center justify-between gap-2">
-                        <span className="font-['Orbitron'] text-[12px] font-black uppercase tracking-[0.04em] sm:text-sm">
+                      <span className="flex w-full items-center justify-between gap-3">
+                        <span className="font-['Orbitron'] text-sm font-black uppercase tracking-[0.04em] sm:text-base">
                           {option.label}
                         </span>
-                        {active && <Check size={14} className="shrink-0 text-cyan-300" strokeWidth={3} />}
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${active ? "border-cyan-300/60 bg-cyan-300/[0.12] text-cyan-200" : "border-white/10 text-transparent"}`}>
+                          <Check size={13} strokeWidth={3} />
+                        </span>
                       </span>
-                      <span className="mt-3 flex items-center justify-between gap-2">
-                        <span className={`flex items-center gap-1.5 font-sans text-[10px] font-semibold ${available ? "text-emerald-300" : "text-red-300"}`}>
+                      <span className="mt-4 flex w-full items-end justify-between gap-3 border-t border-white/[0.07] pt-3">
+                        <span className={`flex min-w-0 items-center gap-1.5 font-sans text-[10px] font-semibold ${available ? "text-emerald-300" : "text-red-300"}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${available ? "bg-emerald-300" : "bg-red-300"}`} />
                           {available ? t("catalog.inStock") : t("catalog.outOfStock")}
                         </span>
                         {Number.isFinite(optionPrice) && optionPrice > 0 && (
-                          <span className="font-sans text-[11px] font-bold text-slate-200">
+                          <span className="shrink-0 font-['Orbitron'] text-[11px] font-black text-white sm:text-xs">
                             {formatPrice(optionPrice)}
                           </span>
                         )}
