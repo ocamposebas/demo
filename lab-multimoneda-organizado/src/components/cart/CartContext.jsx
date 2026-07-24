@@ -5,6 +5,7 @@ import {
   identifyOmnisendContactWhenReady,
   trackOmnisendEvent,
 } from "../../lib/omnisendClient.js";
+import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 
 const CartContext = createContext(null);
 const CART_STORAGE_KEY = "lab_cart";
@@ -414,6 +415,10 @@ export function CartProvider({ children }) {
     if (!Number.isFinite(desiredPrice) || desiredPrice <= 0) return;
     const productWithKey = normalizeCartItem({ ...product, price: desiredPrice, currency, quantity: 1 });
     if (!productWithKey) return;
+    trackMetaEvent("AddToCart", {
+      ...metaCartData([productWithKey], currency),
+      content_name: String(productWithKey.name || ""),
+    });
     cartActionRef.current = "added";
     addedCartKeyRef.current = productWithKey.cartKey;
     pendingBrowserCartEventRef.current = {
@@ -511,9 +516,18 @@ export function CartProvider({ children }) {
       setIsCartOpen(true);
       return;
     }
+    trackMetaEvent(
+      "InitiateCheckout",
+      metaCartData(cartItems, currency),
+      {
+        dedupeKey: `lab_meta_checkout:${cartId}:${cartItems
+          .map((item) => `${getCartKey(item)}:${item.quantity}`)
+          .join("|")}`,
+      },
+    );
     setIsCartOpen(false);
     window.location.assign("/checkout");
-  }, [cartItems.length]);
+  }, [cartId, cartItems, currency]);
 
   const cartTotal = useMemo(() => cartItems.reduce((total, item) => total + Number(item.price || 0) * item.quantity, 0), [cartItems]);
   const cartCount = useMemo(() => cartItems.reduce((count, item) => count + item.quantity, 0), [cartItems]);

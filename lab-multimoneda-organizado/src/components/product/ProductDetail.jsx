@@ -19,6 +19,7 @@ import {
 import { useCart } from "../cart/CartContext.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
+import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 import ProductCard from "../catalog/ProductCard.jsx";
 import SectionHeading from "../ui/SectionHeading.jsx";
 import { CoaViewer, coaText } from "../coa/CoaLibrary.jsx";
@@ -190,6 +191,36 @@ export default function ProductDetail({ product, variations = [], featuredProduc
   const [extraOptions, setExtraOptions] = useState({});
   const [coaState, setCoaState] = useState({ status: "loading", record: null });
   const [showCoa, setShowCoa] = useState(false);
+
+  useEffect(() => {
+    if (!product?.id || !selected) return;
+
+    const price = Number(selectedPriceData.price || 0);
+    const item = {
+      id: product.id,
+      variationId: selected.variationId,
+      quantity: 1,
+      price,
+    };
+
+    trackMetaEvent(
+      "ViewContent",
+      {
+        ...metaCartData([item], currency, price),
+        content_name: String(product.name || ""),
+        content_category: String(product.categories?.[0]?.name || ""),
+      },
+      {
+        dedupeKey: `lab_meta_view:${product.id}:${selected.variationId || "base"}:${currency}`,
+      },
+    );
+  }, [
+    currency,
+    product?.id,
+    product?.name,
+    selected?.variationId,
+    selectedPriceData.price,
+  ]);
 
   useEffect(() => {
     const nextImage = selected?.image || "";

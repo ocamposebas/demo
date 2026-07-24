@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCart } from "../cart/CartContext.jsx";
+import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 
 const VALID_PAYMENT_STATUSES = new Set([
@@ -159,11 +160,31 @@ export default function CheckoutResult() {
         if (status === "APPROVED") {
           try {
             const pendingOrderReference = sessionStorage.getItem("bold_pending_order");
+            const savedMetaOrder = JSON.parse(
+              sessionStorage.getItem(`lab_meta_order:${orderReference}`) || "null",
+            );
+
+            trackMetaEvent(
+              "Purchase",
+              {
+                ...metaCartData(
+                  savedMetaOrder?.items || [],
+                  payload?.order?.currency || savedMetaOrder?.currency,
+                  payload?.order?.total ?? savedMetaOrder?.value,
+                ),
+                order_id: String(payload?.order?.number || orderReference),
+              },
+              {
+                dedupeKey: `lab_meta_purchase:${orderReference}`,
+                persistent: true,
+              },
+            );
 
             if (pendingOrderReference === orderReference) {
               clearCart();
               sessionStorage.removeItem("bold_pending_order");
             }
+            sessionStorage.removeItem(`lab_meta_order:${orderReference}`);
           } catch {
             // La confirmación continúa aunque sessionStorage esté bloqueado.
           }

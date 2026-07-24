@@ -29,6 +29,7 @@ import { useCart } from "../cart/CartContext.jsx";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
 import { LEGAL_VERSION } from "../legal/legalContent.js";
+import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 
 const lineKey = (item) => String(item.cartKey || `${item.id}:${item.variationId || "base"}`);
 const BOLD_SCRIPT_URL = "https://checkout.bold.co/library/boldPaymentButton.js";
@@ -342,6 +343,20 @@ export default function Checkout() {
   const checkoutTotal = Math.max(0, totalBeforeRewards - safeNumber(rewards.discount, 0));
 
   const formatPrice = (value) => formatMoney(safeNumber(value, 0));
+
+  useEffect(() => {
+    if (!cartReady || cartItems.length === 0) return;
+
+    trackMetaEvent(
+      "InitiateCheckout",
+      metaCartData(cartItems, currency, checkoutTotal),
+      {
+        dedupeKey: `lab_meta_checkout:${cartId}:${cartItems
+          .map((item) => `${lineKey(item)}:${item.quantity}`)
+          .join("|")}`,
+      },
+    );
+  }, [cartId, cartItems, cartReady, checkoutTotal, currency]);
 
   const resetPreparedPayment = useCallback(() => {
     boldCheckoutRef.current = null;
@@ -705,6 +720,11 @@ export default function Checkout() {
     if (formStatus === "preparing") return;
 
     if (boldCheckoutRef.current && paymentOrder) {
+      trackMetaEvent(
+        "AddPaymentInfo",
+        metaCartData(cartItems, paymentOrder.currency || currency, paymentOrder.amount),
+        { dedupeKey: `lab_meta_payment:${paymentOrder.reference}` },
+      );
       boldCheckoutRef.current.open();
       setFormStatus("ready");
       return;
@@ -777,7 +797,25 @@ export default function Checkout() {
       try {
         sessionStorage.setItem("bold_pending_order", String(payload.order.reference));
         sessionStorage.setItem("bold_pending_cart_id", String(cartId || ""));
+        sessionStorage.setItem(
+          `lab_meta_order:${payload.order.reference}`,
+          JSON.stringify({
+            currency: payload.order.currency,
+            value: Number(payload.order.amount),
+            items: cartItems.map((item) => ({
+              id: item.id,
+              variationId: item.variationId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          }),
+        );
       } catch {}
+      trackMetaEvent(
+        "AddPaymentInfo",
+        metaCartData(cartItems, payload.order.currency, payload.order.amount),
+        { dedupeKey: `lab_meta_payment:${payload.order.reference}` },
+      );
       setFormStatus("ready");
       checkout.open();
     } catch (error) {
