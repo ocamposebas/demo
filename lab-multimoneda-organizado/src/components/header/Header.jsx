@@ -4,6 +4,39 @@ import { useCart } from "../cart/CartContext";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import CurrencySelector from "../../currency/CurrencySelector.jsx";
 
+async function closeAccountSession() {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await fetch("/api/account/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+    } catch {
+      // The verification below determines whether the cookie was removed.
+    }
+
+    try {
+      const verification = await fetch(`/api/account/me?after_logout=${Date.now()}-${attempt}`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (verification.status === 401) return true;
+    } catch {
+      // Retry once before reporting that the session could not be closed.
+    }
+  }
+
+  return false;
+}
+
 export default function HeaderPro() {
   const { cartCount, setIsCartOpen } = useCart();
   const { language, t } = useLanguage();
@@ -101,17 +134,14 @@ export default function HeaderPro() {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
-      await fetch("/api/account/logout", {
-        method: "POST",
-        credentials: "same-origin",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: "{}",
-      });
-    } finally {
+      const closed = await closeAccountSession();
+      if (!closed) return;
+
       setAccountUser(null);
       setIsMenuOpen(false);
       window.dispatchEvent(new CustomEvent("lab:account-session", { detail: { user: null } }));
+      window.location.replace(`/?logged_out=${Date.now()}`);
+    } finally {
       setIsLoggingOut(false);
     }
   };

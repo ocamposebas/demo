@@ -309,6 +309,39 @@ async function accountRequest(action, { method = "POST", body } = {}) {
   return payload;
 }
 
+async function closeAccountSession() {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await fetch("/api/account/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+          "Content-Type": "application/json",
+        },
+        body: "{}",
+      });
+    } catch {
+      // The verification below determines whether the cookie was removed.
+    }
+
+    try {
+      const verification = await fetch(`/api/account/me?after_logout=${Date.now()}-${attempt}`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (verification.status === 401) return true;
+    } catch {
+      // Retry once before reporting that the session could not be closed.
+    }
+  }
+
+  return false;
+}
+
 function broadcastAccountSession(user, preservePanel = false) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("lab:account-session", { detail: { user: user || null, preservePanel } }));
@@ -676,19 +709,24 @@ export default function Account() {
     // a delayed /me response can restore the authenticated UI after sign-out.
     sessionRequestRef.current++;
     setBusy(true);
-    setUser(null);
-    setOrders(null);
-    setOrderSummary(null);
-    setRewards(null);
-    setAuthState("guest");
-    setActivePanel("overview");
-    setView("login");
     setFeedback(null);
-    broadcastAccountSession(null);
     try {
-      await accountRequest("logout");
-    } catch {
-      // The proxy clears the local HttpOnly cookie even when WordPress is unavailable.
+      const closed = await closeAccountSession();
+      if (!closed) {
+        setFeedback({ type: "error", message: errorMessage({ code: "DEFAULT" }) });
+        await checkSession();
+        return;
+      }
+
+      setUser(null);
+      setOrders(null);
+      setOrderSummary(null);
+      setRewards(null);
+      setAuthState("guest");
+      setActivePanel("overview");
+      setView("login");
+      broadcastAccountSession(null);
+      window.location.replace(`/?logged_out=${Date.now()}`);
     } finally {
       setBusy(false);
     }

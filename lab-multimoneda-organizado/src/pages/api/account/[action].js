@@ -157,10 +157,14 @@ async function handle({ request, params }) {
   let body;
   if (!["GET", "HEAD"].includes(method)) {
     let payload;
-    try {
-      payload = await request.json();
-    } catch {
-      return respond({ ok: false, code: "INVALID_JSON" }, 400);
+    if (action === "logout") {
+      payload = {};
+    } else {
+      try {
+        payload = await request.json();
+      } catch {
+        return respond({ ok: false, code: "INVALID_JSON" }, 400);
+      }
     }
 
     headers["Content-Type"] = "application/json";
