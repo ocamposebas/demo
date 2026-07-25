@@ -30,6 +30,12 @@ import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
 import { LEGAL_VERSION } from "../legal/legalContent.js";
 import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
+import {
+  formatRewardPoints,
+  getCartItemRewardPoints,
+  REWARD_BLOCK_COP,
+  REWARD_BLOCK_POINTS,
+} from "../../lib/rewards.js";
 
 const lineKey = (item) => String(item.cartKey || `${item.id}:${item.variationId || "base"}`);
 const BOLD_SCRIPT_URL = "https://checkout.bold.co/library/boldPaymentButton.js";
@@ -315,7 +321,7 @@ export default function Checkout() {
     total: null,
     message: "",
   });
-  const [rewards, setRewards] = useState({ status: "idle", available: 0, blockPoints: 500, blockUsd: 5, selected: 0, discount: 0, maxPoints: 0, message: "" });
+  const [rewards, setRewards] = useState({ status: "idle", available: 0, blockPoints: REWARD_BLOCK_POINTS, blockCop: REWARD_BLOCK_COP, selected: 0, discount: 0, maxPoints: 0, message: "" });
 
   const formRef = useRef(null);
   const boldCheckoutRef = useRef(null);
@@ -341,6 +347,15 @@ export default function Checkout() {
     ? safeNumber(appliedCoupon.total, Math.max(0, cartTotal - appliedCoupon.discount))
     : cartTotal;
   const checkoutTotal = Math.max(0, totalBeforeRewards - safeNumber(rewards.discount, 0));
+  const orderRewardPoints = useMemo(() => {
+    const productPoints = cartItems.reduce(
+      (sum, item) => sum + getCartItemRewardPoints(item),
+      0,
+    );
+    const eligibleRatio =
+      cartTotal > 0 ? Math.min(1, Math.max(0, totalBeforeRewards / cartTotal)) : 0;
+    return Math.floor(productPoints * eligibleRatio);
+  }, [cartItems, cartTotal, totalBeforeRewards]);
 
   const formatPrice = (value) => formatMoney(safeNumber(value, 0));
 
@@ -424,7 +439,7 @@ export default function Checkout() {
       .then(async (response) => {
         const payload = await response.json();
         if (!response.ok || payload.ok === false) throw new Error(payload.code || "REWARDS_UNAVAILABLE");
-        if (active) setRewards((current) => ({ ...current, status: "ready", available: safeNumber(payload.available), blockPoints: safeNumber(payload.block_points, 500), blockUsd: safeNumber(payload.block_usd, 5), maxPoints: Math.floor(safeNumber(payload.available) / safeNumber(payload.block_points, 500)) * safeNumber(payload.block_points, 500) }));
+        if (active) setRewards((current) => ({ ...current, status: "ready", available: safeNumber(payload.available), blockPoints: safeNumber(payload.block_points, REWARD_BLOCK_POINTS), blockCop: safeNumber(payload.block_cop, REWARD_BLOCK_COP), maxPoints: Math.floor(safeNumber(payload.available) / safeNumber(payload.block_points, REWARD_BLOCK_POINTS)) * safeNumber(payload.block_points, REWARD_BLOCK_POINTS) }));
       })
       .catch(() => { if (active) setRewards((current) => ({ ...current, status: "unavailable" })); });
     return () => { active = false; };
@@ -457,7 +472,7 @@ export default function Checkout() {
       } catch {}
 
       setRewards((current) => {
-        const blockPoints = freshBalance ? safeNumber(freshBalance.block_points, 500) : current.blockPoints;
+        const blockPoints = freshBalance ? safeNumber(freshBalance.block_points, REWARD_BLOCK_POINTS) : current.blockPoints;
         const available = freshBalance
           ? safeNumber(freshBalance.available)
           : error?.code === "REWARD_POINTS_UNAVAILABLE"
@@ -469,7 +484,7 @@ export default function Checkout() {
           status: "ready",
           available,
           blockPoints,
-          blockUsd: freshBalance ? safeNumber(freshBalance.block_usd, 5) : current.blockUsd,
+          blockCop: freshBalance ? safeNumber(freshBalance.block_cop, REWARD_BLOCK_COP) : current.blockCop,
           maxPoints,
           selected: 0,
           discount: 0,
@@ -1303,6 +1318,12 @@ export default function Checkout() {
                             <p className="mt-1.5 font-mono text-[8px] text-slate-600">
                               {formatPrice(unitPrice)} {language === "es" ? "cada uno" : "each"}
                             </p>
+                            {getCartItemRewardPoints(item) > 0 && (
+                              <p className="mt-1 font-mono text-[8px] font-bold text-emerald-300">
+                                + {formatRewardPoints(getCartItemRewardPoints(item))}{" "}
+                                {language === "es" ? "puntos" : "points"}
+                              </p>
+                            )}
                           </div>
 
                           <button
@@ -1445,7 +1466,7 @@ export default function Checkout() {
                   )}
                 </div>
 
-                {false && accountState.status === "connected" && rewards.status !== "unavailable" && rewards.available >= rewards.blockPoints && (
+                {accountState.status === "connected" && rewards.status !== "unavailable" && (
                   <div className="mt-5 overflow-hidden rounded-[22px] border border-blue-300/20 bg-[#071225]">
                     <div className="flex items-center justify-between gap-4 border-b border-blue-300/10 px-5 py-4">
                       <div className="flex min-w-0 items-center gap-3">
@@ -1494,7 +1515,8 @@ export default function Checkout() {
                             {language === "es" ? "VALOR DE CANJE" : "REDEMPTION VALUE"}
                           </p>
                           <p className="mt-1 font-mono text-[10px] font-bold text-white">
-                            {rewards.blockPoints} pts = USD {rewards.blockUsd}
+                            {formatRewardPoints(rewards.blockPoints)} pts = COP{" "}
+                            {formatRewardPoints(rewards.blockCop)}
                           </p>
                         </div>
                       </div>
@@ -1554,6 +1576,15 @@ export default function Checkout() {
                 )}
 
                 <div className="mt-4 space-y-3 font-mono text-[9px]">
+                  <div className="flex items-center justify-between gap-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.045] px-3 py-3 text-emerald-200">
+                    <span className="flex items-center gap-2">
+                      <Coins size={13} />
+                      {language === "es" ? "Puntos que ganarás con esta orden" : "Points you will earn with this order"}
+                    </span>
+                    <strong className="font-['Orbitron'] text-[11px] text-emerald-300">
+                      + {formatRewardPoints(orderRewardPoints)}
+                    </strong>
+                  </div>
                   <div className="flex justify-between gap-4 text-slate-500">
                     <span>{t("checkout.subtotal")}</span>
                     <span className="text-slate-300">{formatPrice(cartTotal)}</span>

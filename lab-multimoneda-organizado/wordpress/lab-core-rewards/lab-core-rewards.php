@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: LAB_CORE Rewards
- * Description: Auditable USD-based loyalty points with dynamic COP conversion for LAB_CORE and WooCommerce.
- * Version: 1.0.1
+ * Description: Auditable COP-based loyalty points and multimoneda redemption for LAB_CORE and WooCommerce.
+ * Version: 1.1.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * WC requires at least: 8.0
@@ -12,8 +12,8 @@
 defined( 'ABSPATH' ) || exit;
 
 final class LAB_Core_Rewards {
-	const VERSION = '1.0.1';
-	const DB_VERSION = '1.0.0';
+	const VERSION = '1.1.0';
+	const DB_VERSION = '1.1.0';
 	const NS = 'lab-core/v1';
 	const RATE_CACHE = 'lab_core_rewards_usd_rates';
 
@@ -41,10 +41,9 @@ final class LAB_Core_Rewards {
 			PRIMARY KEY (id), UNIQUE KEY reference (reference), KEY user_status (user_id,status), KEY order_id (order_id)
 		) {$collate};" );
 		update_option( 'lab_core_rewards_db_version', self::DB_VERSION, false );
-		add_option( 'lab_core_rewards_points_per_usd', 1, '', false );
-		add_option( 'lab_core_rewards_block_points', 500, '', false );
-		add_option( 'lab_core_rewards_block_usd', 5, '', false );
-		add_option( 'lab_core_rewards_max_percent', 25, '', false );
+		update_option( 'lab_core_rewards_points_per_cop', 1, false );
+		update_option( 'lab_core_rewards_block_points', 1000, false );
+		update_option( 'lab_core_rewards_block_cop', 50000, false );
 		add_option( 'lab_core_rewards_rate_ttl', 21600, '', false );
 	}
 
@@ -86,8 +85,8 @@ final class LAB_Core_Rewards {
 		$reserved = abs( (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(points),0) FROM ' . self::table() . " WHERE user_id=%d AND status='reserved'", $user_id ) ) );
 		$pending = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COALESCE(SUM(points),0) FROM ' . self::table() . " WHERE user_id=%d AND status='pending'", $user_id ) );
 		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT points,type,status,reference,currency,market_rate,amount,created_at FROM ' . self::table() . ' WHERE user_id=%d ORDER BY id DESC LIMIT 50', $user_id ), ARRAY_A );
-		$block = max( 1, absint( get_option( 'lab_core_rewards_block_points', 500 ) ) );
-		return array( 'available' => $available, 'reserved' => $reserved, 'pending' => $pending, 'redeemable_blocks' => intdiv( max( 0, $available ), $block ), 'block_points' => $block, 'block_usd' => (float) get_option( 'lab_core_rewards_block_usd', 5 ), 'history' => $rows );
+		$block = max( 1, absint( get_option( 'lab_core_rewards_block_points', 1000 ) ) );
+		return array( 'available' => $available, 'reserved' => $reserved, 'pending' => $pending, 'redeemable_blocks' => intdiv( max( 0, $available ), $block ), 'block_points' => $block, 'block_cop' => (float) get_option( 'lab_core_rewards_block_cop', 50000 ), 'history' => $rows );
 	}
 
 	public static function balance_api( $request ) { return rest_ensure_response( array_merge( array( 'ok' => true ), self::summary( self::user_id( $request ) ) ) ); }
@@ -116,13 +115,12 @@ final class LAB_Core_Rewards {
 		$currency = strtoupper( sanitize_text_field( isset( $data['currency'] ) ? $data['currency'] : 'USD' ) );
 		$subtotal = round( max( 0, (float) ( isset( $data['subtotal'] ) ? $data['subtotal'] : 0 ) ), 4 );
 		$points = max( 0, absint( isset( $data['points'] ) ? $data['points'] : 0 ) );
-		$block = max( 1, absint( get_option( 'lab_core_rewards_block_points', 500 ) ) );
+		$block = max( 1, absint( get_option( 'lab_core_rewards_block_points', 1000 ) ) );
 		if ( ! in_array( $currency, array( 'USD', 'COP' ), true ) || $subtotal <= 0 || $points % $block !== 0 ) return new WP_Error( 'INVALID_REWARD_QUOTE', 'Invalid reward quote.', array( 'status' => 422 ) );
 		$rates = self::rates(); if ( is_wp_error( $rates ) ) return $rates; $rate = (float) $rates[ $currency ];
 		$max_points = intdiv( max( 0, self::summary( $user_id )['available'] ), $block ) * $block;
-		$max_discount = $subtotal * min( 100, max( 1, absint( get_option( 'lab_core_rewards_max_percent', 25 ) ) ) ) / 100;
-		$block_value = (float) get_option( 'lab_core_rewards_block_usd', 5 ) * $rate;
-		$allowed_blocks = min( intdiv( $max_points, $block ), (int) floor( $max_discount / $block_value ) );
+		$block_value = (float) get_option( 'lab_core_rewards_block_cop', 50000 ) / ( 'COP' === $currency ? 1 : $rates['COP'] );
+		$allowed_blocks = min( intdiv( $max_points, $block ), (int) floor( $subtotal / $block_value ) );
 		if ( $points > $allowed_blocks * $block ) return new WP_Error( 'REWARD_POINTS_UNAVAILABLE', 'The requested points are not available for this order.', array( 'status' => 422 ) );
 		if ( 0 === $points ) return rest_ensure_response( array( 'ok' => true, 'points' => 0, 'discount' => 0, 'rate' => $rate, 'max_points' => $allowed_blocks * $block ) );
 		$discount = round( ( $points / $block ) * $block_value, 'COP' === $currency ? 0 : 2 );
@@ -149,9 +147,11 @@ final class LAB_Core_Rewards {
 		$wpdb->update( self::table(), array( 'status' => 'used', 'updated_at' => $now ), array( 'order_id' => $order_id, 'type' => 'redemption', 'status' => 'reserved' ) );
 		$reference = 'earn_order_' . $order_id; $exists = $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . self::table() . ' WHERE reference=%s', $reference ) ); if ( $exists ) return;
 		$currency = $order->get_currency(); $rate = (float) $order->get_meta( '_lab_reward_market_rate' );
-		if ( $rate <= 0 ) { $rates = self::rates(); if ( is_wp_error( $rates ) || empty( $rates[ $currency ] ) ) return; $rate = (float) $rates[ $currency ]; }
+		$rates = self::rates(); if ( is_wp_error( $rates ) || empty( $rates[ $currency ] ) ) return;
+		if ( $rate <= 0 ) $rate = (float) $rates[ $currency ];
 		$eligible = 0; foreach ( $order->get_items() as $item ) $eligible += (float) $item->get_total();
-		$points = (int) floor( ( $eligible / $rate ) * max( 0, (float) get_option( 'lab_core_rewards_points_per_usd', 1 ) ) ); if ( $points < 1 ) return;
+		$eligible_cop = 'COP' === $currency ? $eligible : $eligible * (float) $rates['COP'];
+		$points = (int) floor( $eligible_cop * max( 0, (float) get_option( 'lab_core_rewards_points_per_cop', 1 ) ) ); if ( $points < 1 ) return;
 		$wpdb->insert( self::table(), array( 'user_id' => $order->get_customer_id(), 'order_id' => $order_id, 'points' => $points, 'type' => 'earning', 'status' => 'available', 'reference' => $reference, 'currency' => $currency, 'market_rate' => $rate, 'amount' => $eligible, 'created_at' => $now, 'updated_at' => $now ) );
 		$order->update_meta_data( '_lab_reward_points_earned', $points ); $order->update_meta_data( '_lab_reward_market_rate', $rate ); $order->save();
 	}
@@ -160,7 +160,7 @@ final class LAB_Core_Rewards {
 	public static function refund_order( $order_id ) { global $wpdb; self::release_order( $order_id ); $wpdb->update( self::table(), array( 'status' => 'reversed', 'updated_at' => current_time( 'mysql', true ) ), array( 'order_id' => $order_id, 'type' => 'earning', 'status' => 'available' ) ); $wpdb->update( self::table(), array( 'status' => 'released', 'updated_at' => current_time( 'mysql', true ) ), array( 'order_id' => $order_id, 'type' => 'redemption', 'status' => 'used' ) ); }
 
 	public static function admin_menu() { add_submenu_page( 'woocommerce', 'LAB_CORE Rewards', 'LAB_CORE Rewards', 'manage_woocommerce', 'lab-core-rewards', array( __CLASS__, 'admin_page' ) ); }
-	public static function admin_page() { $rates = self::rates(); echo '<div class="wrap"><h1>LAB_CORE Rewards</h1><p>1 USD elegible = 1 punto. 500 puntos = USD 5. Canje máximo: 25%.</p>'; if ( is_wp_error( $rates ) ) echo '<div class="notice notice-error"><p>' . esc_html( $rates->get_error_message() ) . '</p></div>'; else echo '<p><strong>USD/COP:</strong> ' . esc_html( number_format_i18n( $rates['COP'], 2 ) ) . ' · ExchangeRate-API · ' . esc_html( gmdate( 'Y-m-d H:i', $rates['provider_updated_at'] ) ) . ' UTC</p>'; echo '</div>'; }
+	public static function admin_page() { $rates = self::rates(); echo '<div class="wrap"><h1>LAB_CORE Rewards</h1><p>1 COP elegible = 1 punto. 1.000 puntos = COP 50.000.</p>'; if ( is_wp_error( $rates ) ) echo '<div class="notice notice-error"><p>' . esc_html( $rates->get_error_message() ) . '</p></div>'; else echo '<p><strong>USD/COP:</strong> ' . esc_html( number_format_i18n( $rates['COP'], 2 ) ) . ' · ExchangeRate-API · ' . esc_html( gmdate( 'Y-m-d H:i', $rates['provider_updated_at'] ) ) . ' UTC</p>'; echo '</div>'; }
 }
 
 register_activation_hook( __FILE__, array( 'LAB_Core_Rewards', 'activate' ) );

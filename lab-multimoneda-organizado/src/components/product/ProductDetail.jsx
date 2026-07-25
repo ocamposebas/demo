@@ -23,6 +23,7 @@ import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 import ProductCard from "../catalog/ProductCard.jsx";
 import SectionHeading from "../ui/SectionHeading.jsx";
 import { CoaViewer, coaText } from "../coa/CoaLibrary.jsx";
+import { formatRewardPoints, getProductRewardPoints } from "../../lib/rewards.js";
 
 const PRESENTATION_PATTERN = /\d+(?:[.,]\d+)?\s*(?:mcg|mg|ml|g|iu|ui)\b/i;
 
@@ -161,6 +162,7 @@ export default function ProductDetail({ product, variations = [], featuredProduc
   const selected =
     options.find((option) => option.key === selectedKey) || options[0];
   const selectedPriceData = getPriceData(selected?.source || product);
+  const selectedRewardPoints = getProductRewardPoints(selected?.source || product);
   const [displayImage, setDisplayImage] = useState(selected?.image || "");
   const [imageLoading, setImageLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "" });
@@ -622,6 +624,12 @@ export default function ProductDetail({ product, variations = [], featuredProduc
                     {formatPrice(selectedPriceData.price)}
                   </p>
                   <p className="mt-1 font-mono text-[7px] uppercase tracking-[0.16em] text-cyan-300/60">{currency}</p>
+                  {selectedRewardPoints.points > 0 && (
+                    <p className="mt-2 font-mono text-[9px] font-bold text-emerald-300">
+                      + {formatRewardPoints(selectedRewardPoints.points)}{" "}
+                      {language === "es" ? "puntos con esta presentación" : "points with this presentation"}
+                    </p>
+                  )}
                 </div>
                 <p className="text-right font-mono text-[8px] uppercase leading-4 tracking-[0.13em] text-slate-500">
                   {t("product.sku")}<br />

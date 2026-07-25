@@ -928,13 +928,13 @@ export default function Account() {
                 <div>
                   <div className="flex items-start gap-3 border-b border-white/[0.08] pb-5">
                     <CircleDollarSign className="mt-0.5 text-blue-300" size={19} />
-                    <div><h2 className="font-['Orbitron'] text-sm font-black uppercase text-white">LAB POINTS</h2><p className="mt-2 font-mono text-[10px] leading-5 text-slate-500">{language === "es" ? "1 USD elegible = 1 punto · 500 puntos = USD 5 o su equivalente en COP." : "1 eligible USD = 1 point · 500 points = USD 5 or its COP equivalent."}</p></div>
+                    <div><h2 className="font-['Orbitron'] text-sm font-black uppercase text-white">LAB POINTS</h2><p className="mt-2 font-mono text-[10px] leading-5 text-slate-500">{language === "es" ? "Cada peso colombiano elegible suma 1 punto · 1.000 puntos = COP 50.000." : "Every eligible Colombian peso earns 1 point · 1,000 points = COP 50,000."}</p></div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     {[
                       [language === "es" ? "Disponibles" : "Available", rewards?.available ?? "—", "text-blue-300"],
                       [language === "es" ? "Pendientes" : "Pending", rewards?.pending ?? "—", "text-amber-300"],
-                      [language === "es" ? "Valor canjeable" : "Redeemable value", rewards ? `USD ${((rewards.redeemable_blocks || 0) * (rewards.block_usd || 5)).toFixed(2)}` : "—", "text-emerald-300"],
+                      [language === "es" ? "Valor canjeable" : "Redeemable value", rewards ? `COP ${new Intl.NumberFormat("es-CO").format((rewards.redeemable_blocks || 0) * (rewards.block_cop || 50000))}` : "—", "text-emerald-300"],
                     ].map(([label, value, tone]) => <article key={label} className="border border-white/[0.08] bg-[#020617]/65 p-5"><p className={`font-['Orbitron'] text-xl font-black ${tone}`}>{value}</p><p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">{label}</p></article>)}
                   </div>
                   <div className="mt-6">

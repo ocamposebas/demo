@@ -2,6 +2,7 @@ import { ArrowUpRight, ShoppingCart, SlidersHorizontal } from "lucide-react";
 import { useCart } from "../cart/CartContext";
 import { useLanguage } from "../../i18n/LanguageContext.jsx";
 import { useCurrency } from "../../currency/CurrencyContext.jsx";
+import { formatRewardPoints, getProductRewardPoints } from "../../lib/rewards.js";
 
 export default function ProductCard({ product, featured = false }) {
   const { addToCart } = useCart();
@@ -15,6 +16,7 @@ export default function ProductCard({ product, featured = false }) {
     product.type === "variable" || product.variations?.length > 0;
   const priceData = getPriceData(product);
   const hasPrice = Number.isFinite(priceData.price) && priceData.price > 0;
+  const rewardPoints = getProductRewardPoints(product);
   const formatPrice = hasPrice
     ? priceData.isRange && Number.isFinite(priceData.max)
       ? `${formatMoney(priceData.price)} – ${formatMoney(priceData.max)}`
@@ -93,6 +95,13 @@ export default function ProductCard({ product, featured = false }) {
             <p className="font-mono text-[9px] uppercase tracking-[0.1em] text-slate-400">{t("catalog.startingAt")}</p>
             <p className="mt-1 break-words text-sm font-bold leading-snug tracking-[-0.04em] text-white sm:text-xl">{formatPrice}</p>
             <p className="mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-cyan-200/80">{currency}</p>
+            {rewardPoints.points > 0 && (
+              <p className="mt-2 font-mono text-[9px] font-bold text-emerald-300">
+                + {formatRewardPoints(rewardPoints.points)}
+                {rewardPoints.isRange ? ` – ${formatRewardPoints(rewardPoints.maxPoints)}` : ""}{" "}
+                {language === "es" ? "puntos por compra" : "points per purchase"}
+              </p>
+            )}
           </div>
         </div>
 
