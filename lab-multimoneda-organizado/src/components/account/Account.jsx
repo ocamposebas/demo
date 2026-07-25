@@ -928,7 +928,7 @@ export default function Account() {
                 <div>
                   <div className="flex items-start gap-3 border-b border-white/[0.08] pb-5">
                     <CircleDollarSign className="mt-0.5 text-blue-300" size={19} />
-                    <div><h2 className="font-['Orbitron'] text-sm font-black uppercase text-white">LAB POINTS</h2><p className="mt-2 font-mono text-[10px] leading-5 text-slate-500">{language === "es" ? "Cada peso colombiano elegible suma 1 punto · 1.000 puntos = COP 50.000." : "Every eligible Colombian peso earns 1 point · 1,000 points = COP 50,000."}</p></div>
+                    <div><h2 className="font-['Orbitron'] text-sm font-black uppercase text-white">LAB POINTS</h2><p className="mt-2 font-mono text-[10px] leading-5 text-slate-500">{language === "es" ? "Cada COP 1.000 completos suman 1 punto · 1.000 puntos = COP 50.000." : "Every complete COP 1,000 earns 1 point · 1,000 points = COP 50,000."}</p></div>
                   </div>
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     {[

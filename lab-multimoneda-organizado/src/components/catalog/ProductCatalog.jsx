@@ -78,12 +78,12 @@ export default function ProductCatalog({ products, error }) {
           className="mb-7 flex flex-col gap-2 border-l-2 border-l-cyan-300 border-y border-r border-white/[0.08] bg-gradient-to-r from-cyan-300/[0.07] to-transparent px-4 py-3.5 transition-colors hover:border-y-cyan-300/20 hover:border-r-cyan-300/20 sm:flex-row sm:items-center sm:justify-between sm:px-5"
         >
           <span className="font-['Orbitron'] text-[11px] font-black uppercase tracking-[0.08em] text-blue-100">
-            LAB POINTS · 1 COP = 1 PUNTO
+            LAB POINTS · COP 1.000 = 1 PUNTO
           </span>
           <span className="font-mono text-[10px] leading-5 text-slate-300">
             {language === "es"
-              ? "Cada peso colombiano elegible suma 1 punto. Canjea 1.000 puntos por COP 50.000."
-              : "Every eligible Colombian peso earns 1 point. Redeem 1,000 points for COP 50,000."}
+              ? "Cada COP 1.000 completos suman 1 punto. Canjea 1.000 puntos por COP 50.000."
+              : "Every complete COP 1,000 earns 1 point. Redeem 1,000 points for COP 50,000."}
           </span>
         </a>
 

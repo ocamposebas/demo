@@ -627,7 +627,7 @@ export default function ProductDetail({ product, variations = [], featuredProduc
                   {selectedRewardPoints.points > 0 && (
                     <p className="mt-2 font-mono text-[9px] font-bold text-emerald-300">
                       + {formatRewardPoints(selectedRewardPoints.points)}{" "}
-                      {language === "es" ? "puntos con esta presentación" : "points with this presentation"}
+                      {language === "es" ? "puntos con esta presentación · 1 punto por cada $1.000 COP" : "points with this presentation · 1 point per COP 1,000"}
                     </p>
                   )}
                 </div>

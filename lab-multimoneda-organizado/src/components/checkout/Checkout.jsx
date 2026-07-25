@@ -33,6 +33,7 @@ import { metaCartData, trackMetaEvent } from "../../lib/metaPixel.js";
 import {
   formatRewardPoints,
   getCartItemRewardPoints,
+  getCartRewardPoints,
   REWARD_BLOCK_COP,
   REWARD_BLOCK_POINTS,
 } from "../../lib/rewards.js";
@@ -348,10 +349,7 @@ export default function Checkout() {
     : cartTotal;
   const checkoutTotal = Math.max(0, totalBeforeRewards - safeNumber(rewards.discount, 0));
   const orderRewardPoints = useMemo(() => {
-    const productPoints = cartItems.reduce(
-      (sum, item) => sum + getCartItemRewardPoints(item),
-      0,
-    );
+    const productPoints = getCartRewardPoints(cartItems);
     const eligibleRatio =
       cartTotal > 0 ? Math.min(1, Math.max(0, totalBeforeRewards / cartTotal)) : 0;
     return Math.floor(productPoints * eligibleRatio);

@@ -99,7 +99,7 @@ export default function ProductCard({ product, featured = false }) {
               <p className="mt-2 font-mono text-[9px] font-bold text-emerald-300">
                 + {formatRewardPoints(rewardPoints.points)}
                 {rewardPoints.isRange ? ` – ${formatRewardPoints(rewardPoints.maxPoints)}` : ""}{" "}
-                {language === "es" ? "puntos por compra" : "points per purchase"}
+                {language === "es" ? "puntos por compra · 1 punto por cada $1.000 COP" : "points per purchase · 1 point per COP 1,000"}
               </p>
             )}
           </div>

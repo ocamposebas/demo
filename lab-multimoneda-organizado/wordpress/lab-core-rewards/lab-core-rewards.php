@@ -2,7 +2,7 @@
 /**
  * Plugin Name: LAB_CORE Rewards
  * Description: Auditable COP-based loyalty points and multimoneda redemption for LAB_CORE and WooCommerce.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * WC requires at least: 8.0
@@ -12,8 +12,8 @@
 defined( 'ABSPATH' ) || exit;
 
 final class LAB_Core_Rewards {
-	const VERSION = '1.1.0';
-	const DB_VERSION = '1.1.0';
+	const VERSION = '1.1.1';
+	const DB_VERSION = '1.1.1';
 	const NS = 'lab-core/v1';
 	const RATE_CACHE = 'lab_core_rewards_usd_rates';
 
@@ -41,7 +41,7 @@ final class LAB_Core_Rewards {
 			PRIMARY KEY (id), UNIQUE KEY reference (reference), KEY user_status (user_id,status), KEY order_id (order_id)
 		) {$collate};" );
 		update_option( 'lab_core_rewards_db_version', self::DB_VERSION, false );
-		update_option( 'lab_core_rewards_points_per_cop', 1, false );
+		update_option( 'lab_core_rewards_points_per_cop', 0.001, false );
 		update_option( 'lab_core_rewards_block_points', 1000, false );
 		update_option( 'lab_core_rewards_block_cop', 50000, false );
 		add_option( 'lab_core_rewards_rate_ttl', 21600, '', false );
@@ -160,7 +160,7 @@ final class LAB_Core_Rewards {
 	public static function refund_order( $order_id ) { global $wpdb; self::release_order( $order_id ); $wpdb->update( self::table(), array( 'status' => 'reversed', 'updated_at' => current_time( 'mysql', true ) ), array( 'order_id' => $order_id, 'type' => 'earning', 'status' => 'available' ) ); $wpdb->update( self::table(), array( 'status' => 'released', 'updated_at' => current_time( 'mysql', true ) ), array( 'order_id' => $order_id, 'type' => 'redemption', 'status' => 'used' ) ); }
 
 	public static function admin_menu() { add_submenu_page( 'woocommerce', 'LAB_CORE Rewards', 'LAB_CORE Rewards', 'manage_woocommerce', 'lab-core-rewards', array( __CLASS__, 'admin_page' ) ); }
-	public static function admin_page() { $rates = self::rates(); echo '<div class="wrap"><h1>LAB_CORE Rewards</h1><p>1 COP elegible = 1 punto. 1.000 puntos = COP 50.000.</p>'; if ( is_wp_error( $rates ) ) echo '<div class="notice notice-error"><p>' . esc_html( $rates->get_error_message() ) . '</p></div>'; else echo '<p><strong>USD/COP:</strong> ' . esc_html( number_format_i18n( $rates['COP'], 2 ) ) . ' · ExchangeRate-API · ' . esc_html( gmdate( 'Y-m-d H:i', $rates['provider_updated_at'] ) ) . ' UTC</p>'; echo '</div>'; }
+	public static function admin_page() { $rates = self::rates(); echo '<div class="wrap"><h1>LAB_CORE Rewards</h1><p>Cada COP 1.000 completos = 1 punto. 1.000 puntos = COP 50.000.</p>'; if ( is_wp_error( $rates ) ) echo '<div class="notice notice-error"><p>' . esc_html( $rates->get_error_message() ) . '</p></div>'; else echo '<p><strong>USD/COP:</strong> ' . esc_html( number_format_i18n( $rates['COP'], 2 ) ) . ' · ExchangeRate-API · ' . esc_html( gmdate( 'Y-m-d H:i', $rates['provider_updated_at'] ) ) . ' UTC</p>'; echo '</div>'; }
 }
 
 register_activation_hook( __FILE__, array( 'LAB_Core_Rewards', 'activate' ) );
