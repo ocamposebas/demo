@@ -4,6 +4,7 @@ const SITE = "https://labcorepep.com";
 const STATIC_PATHS = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/shop", changefreq: "daily", priority: "0.9" },
+  { path: "/peptidos-investigacion-colombia", changefreq: "weekly", priority: "0.9" },
   { path: "/peptide-info", changefreq: "monthly", priority: "0.8" },
   { path: "/coa-library", changefreq: "weekly", priority: "0.8" },
   { path: "/research-areas", changefreq: "monthly", priority: "0.7" },

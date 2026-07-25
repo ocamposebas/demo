@@ -136,6 +136,7 @@ export default function Footer() {
       title: t("footer.navigation"),
       links: [
         [t("footer.shopCatalog"), "/shop"],
+        [language === "es" ? "Péptidos en Colombia" : "Peptides in Colombia", "/peptidos-investigacion-colombia"],
         [t("footer.systemNews"), "/news"],
         [t("footer.aboutUs"), "/about"],
         [t("footer.researchAreas"), "/research-areas"],

@@ -58,6 +58,7 @@ export default function HeaderPro() {
 
   const navLinks = [
     { name: t("nav.shop"), href: "/shop" },
+    { name: language === "es" ? "Péptidos Colombia" : "Peptides Colombia", href: "/peptidos-investigacion-colombia" },
     { name: t("nav.about"), href: "/about" },
     { name: t("nav.peptideInfo"), href: "/peptide-info" },
     { name: t("nav.coa"), href: "/coa-library" },
