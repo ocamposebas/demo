@@ -40,15 +40,16 @@ try {
 const siteUrl = Astro.url.origin;
 const canonicalURL = new URL(Astro.url.pathname, siteUrl);
 
-const seoTitle = "Research Peptides & Analytical Compounds | LAB_CORE";
-const seoDescription = "Explore LAB_CORE research peptides and analytical compounds, available presentations, pricing and batch documentation.";
+const seoTitle = "Comprar péptidos de investigación en Colombia | LAB_CORE";
+const seoDescription = "Explora péptidos y compuestos para investigación de laboratorio disponibles en Colombia. Consulta presentaciones, precios, inventario y documentación por lote.";
 
 const jsonLdSchema = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  "name": "LAB_CORE Research Peptides Catalog",
+  "name": "Catálogo de péptidos de investigación en Colombia",
   "description": seoDescription,
   "url": canonicalURL.toString(),
+  "inLanguage": "es-CO",
   "mainEntity": {
     "@type": "ItemList",
     "numberOfItems": products.length,

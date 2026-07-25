@@ -2,23 +2,22 @@ export const prerender = false;
 
 const SITE = "https://labcorepep.com";
 const STATIC_PATHS = [
-  "/",
-  "/shop",
-  "/about",
-  "/peptide-info",
-  "/research-areas",
-  "/coa-library",
-  "/molecular-data",
-  "/specifications",
-  "/analysis-log",
-  "/faqs",
-  "/news",
-  "/contact",
-  "/privacy-policy",
-  "/terms-conditions",
-  "/disclaimer",
-  "/waiver-agreement",
-  "/track-order",
+  { path: "/", changefreq: "weekly", priority: "1.0" },
+  { path: "/shop", changefreq: "daily", priority: "0.9" },
+  { path: "/peptide-info", changefreq: "monthly", priority: "0.8" },
+  { path: "/coa-library", changefreq: "weekly", priority: "0.8" },
+  { path: "/research-areas", changefreq: "monthly", priority: "0.7" },
+  { path: "/about", changefreq: "monthly", priority: "0.6" },
+  { path: "/molecular-data", changefreq: "monthly", priority: "0.6" },
+  { path: "/specifications", changefreq: "monthly", priority: "0.6" },
+  { path: "/analysis-log", changefreq: "weekly", priority: "0.6" },
+  { path: "/faqs", changefreq: "monthly", priority: "0.6" },
+  { path: "/news", changefreq: "weekly", priority: "0.6" },
+  { path: "/contact", changefreq: "yearly", priority: "0.5" },
+  { path: "/privacy-policy", changefreq: "yearly", priority: "0.2" },
+  { path: "/terms-conditions", changefreq: "yearly", priority: "0.2" },
+  { path: "/disclaimer", changefreq: "yearly", priority: "0.2" },
+  { path: "/waiver-agreement", changefreq: "yearly", priority: "0.2" },
 ];
 
 const escapeXml = (value) =>
@@ -65,7 +64,10 @@ async function getProducts() {
 export async function GET() {
   const products = await getProducts();
   const urls = [
-    ...STATIC_PATHS.map((path) => ({ loc: new URL(path, SITE).toString() })),
+    ...STATIC_PATHS.map(({ path, ...meta }) => ({
+      loc: new URL(path, SITE).toString(),
+      ...meta,
+    })),
     ...products
       .filter((product) => product?.slug)
       .map((product) => ({
@@ -73,6 +75,8 @@ export async function GET() {
         lastmod: product.modified_gmt
           ? new Date(`${product.modified_gmt}Z`).toISOString()
           : undefined,
+        changefreq: "weekly",
+        priority: "0.8",
       })),
   ];
 
@@ -80,8 +84,8 @@ export async function GET() {
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls
   .map(
-    ({ loc, lastmod }) =>
-      `  <url><loc>${escapeXml(loc)}</loc>${lastmod ? `<lastmod>${escapeXml(lastmod)}</lastmod>` : ""}</url>`,
+    ({ loc, lastmod, changefreq, priority }) =>
+      `  <url><loc>${escapeXml(loc)}</loc>${lastmod ? `<lastmod>${escapeXml(lastmod)}</lastmod>` : ""}${changefreq ? `<changefreq>${changefreq}</changefreq>` : ""}${priority ? `<priority>${priority}</priority>` : ""}</url>`,
   )
   .join("\n")}
 </urlset>`;

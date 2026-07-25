@@ -188,12 +188,12 @@ try {
 const siteUrl = Astro.url.origin;
 const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
 const seoTitle = product
-  ? `${product.name} | LAB_CORE Research Compounds`
-  : "Product Detail | LAB_CORE";
+  ? `${product.name} en Colombia | Péptido de investigación LAB_CORE`
+  : "Producto de investigación | LAB_CORE Colombia";
 const seoDescription =
   product?.shortDescriptionText ||
   product?.descriptionText ||
-  "Research compound profile, available presentations and batch information from LAB_CORE.";
+  "Consulta información, presentaciones disponibles y documentación por lote de este compuesto para investigación de laboratorio en Colombia.";
 const seoImage = product?.images?.[0]?.src || `${siteUrl}/INICIO.png`;
 
 const productSchema = product
@@ -204,6 +204,11 @@ const productSchema = product
       description: seoDescription,
       image: product.images?.map((image) => image.src).filter(Boolean),
       sku: product.sku || `LAB-${product.id}`,
+      brand: {
+        "@type": "Brand",
+        name: "LAB_CORE",
+      },
+      category: "Péptidos y compuestos para investigación de laboratorio",
       url: canonicalURL,
       offers:
         variations.length > 0
@@ -228,6 +233,22 @@ const productSchema = product
                   : "https://schema.org/OutOfStock",
               url: canonicalURL,
             },
+      subjectOf: {
+        "@type": "WebPage",
+        inLanguage: "es-CO",
+        url: canonicalURL,
+      },
+    }
+  : null;
+const breadcrumbSchema = product
+  ? {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Inicio", item: `${siteUrl}/` },
+        { "@type": "ListItem", position: 2, name: "Catálogo", item: `${siteUrl}/shop` },
+        { "@type": "ListItem", position: 3, name: product.name, item: canonicalURL },
+      ],
     }
   : null;
 ---
@@ -242,6 +263,7 @@ const productSchema = product
     <meta property="og:type" content="product" />
     <meta name="robots" content={product ? "index, follow, max-image-preview:large" : "noindex, follow"} />
     {productSchema && <script type="application/ld+json" set:html={JSON.stringify(productSchema)} />}
+    {breadcrumbSchema && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />}
   </Fragment>
 
   <ProductDetailExperience

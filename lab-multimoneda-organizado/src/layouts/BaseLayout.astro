@@ -3,11 +3,12 @@ import '../styles/global.css';
 import AgeGate from '../components/ui/AgeGate.astro';
 
 const {
-  title = 'LAB_CORE | Research Peptides & Analytical Compounds',
-  description = 'Research peptides and analytical compounds with clear product information, batch documentation and secure ordering.',
+  title = 'Péptidos de investigación en Colombia | LAB_CORE',
+  description = 'Péptidos y compuestos para investigación de laboratorio en Colombia, con información técnica, trazabilidad por lote y certificados de análisis.',
   url,
   canonical,
   image = '/INICIO.png',
+  imageAlt = 'LAB_CORE Colombia — péptidos y compuestos para investigación',
 } = Astro.props;
 
 const toSiteBase = (value) => {
@@ -84,6 +85,36 @@ canonicalURL.search = '';
 canonicalURL.hash = '';
 
 const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': new URL('/#organization', siteBase).toString(),
+  name: 'LAB_CORE',
+  alternateName: ['LAB CORE', 'LAB_CORE Colombia'],
+  url: siteBase.toString(),
+  logo: {
+    '@type': 'ImageObject',
+    url: new URL('/brand-mark.svg', siteBase).toString(),
+  },
+  image: socialImageURL.toString(),
+  description:
+    'Proveedor de péptidos y compuestos destinados exclusivamente a investigación de laboratorio, con documentación analítica y trazabilidad por lote.',
+  areaServed: {
+    '@type': 'Country',
+    name: 'Colombia',
+  },
+};
+
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': new URL('/#website', siteBase).toString(),
+  url: siteBase.toString(),
+  name: 'LAB_CORE Colombia',
+  alternateName: 'LAB_CORE',
+  inLanguage: ['es-CO', 'en'],
+  publisher: { '@id': organizationSchema['@id'] },
+};
 ---
 
 <!doctype html>
@@ -99,6 +130,8 @@ const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
 
     <meta name="theme-color" content="#020617" />
     <meta name="generator" content={Astro.generator} />
+    <meta name="geo.region" content="CO" />
+    <meta name="geo.placename" content="Colombia" />
 
     <link
       rel="icon"
@@ -118,10 +151,13 @@ const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
       rel="canonical"
       href={canonicalURL.toString()}
     />
+    <link rel="alternate" hreflang="es-CO" href={canonicalURL.toString()} />
+    <link rel="alternate" hreflang="x-default" href={canonicalURL.toString()} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="LAB_CORE" />
+    <meta property="og:locale" content="es_CO" />
     <meta property="og:url" content={canonicalURL.toString()} />
     <meta property="og:title" content={title} />
 
@@ -137,7 +173,7 @@ const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
 
     <meta
       property="og:image:alt"
-      content="LAB_CORE"
+      content={imageAlt}
     />
 
     <!-- Twitter / X -->
@@ -168,8 +204,11 @@ const socialImageURL = toAbsoluteURL(image, '/INICIO.png');
 
     <meta
       name="twitter:image:alt"
-      content="LAB_CORE"
+      content={imageAlt}
     />
+
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
 
     <!-- Google Fonts -->
     <link

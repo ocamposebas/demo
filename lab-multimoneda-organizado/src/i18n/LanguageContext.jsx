@@ -12,8 +12,8 @@ const translations = {
     announcements: ["Descuentos de investigación por tiempo limitado", "¡Envío gratis por lanzamiento de LAB_CORE Colombia!", "Compuestos probados por lote con acceso a COA", "Pago seguro disponible", "Solo para uso investigativo"],
     hero: {
       certified: "SOLO USO DE LABORATORIO // CERTIFICADO",
-      pureScience: "CIENCIA PURA.", rawIntegrity: "INTEGRIDAD REAL.",
-      descriptionBefore: "Péptidos de investigación validados en EE. UU. y compuestos de alta calidad sintetizados para análisis in vitro. Diseñados bajo rigurosos protocolos de laboratorio estéril para mantener una",
+      pureScience: "PÉPTIDOS DE INVESTIGACIÓN.", rawIntegrity: "CALIDAD DOCUMENTADA.",
+      descriptionBefore: "Péptidos de investigación disponibles en Colombia y compuestos de alta calidad sintetizados para análisis in vitro. Diseñados bajo rigurosos protocolos de laboratorio estéril para mantener una",
       purity: "pureza estructural del 99,86%", descriptionAfter: " Uso estrictamente no humano.",
       viewCatalog: "Ver catálogo", verifyCoa: "Verificar COA del lote",
       analytics: "ANALÍTICA", labs: "PRUEBAS_LAB", volume: "VOLUMEN",

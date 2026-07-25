@@ -7,19 +7,19 @@ import "../styles/global.css";
 
 const siteUrl = Astro.url.origin;
 const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
-const seoTitle = "About LAB_CORE | US Research Standards Expanding Across LATAM";
-const seoDescription = "Discover the LAB_CORE story: US-origin research peptides, batch-specific analytical documentation, high-quality COA access, and expansion into Mexico and Colombia.";
+const seoTitle = "LAB_CORE Colombia | Calidad y trazabilidad para investigación";
+const seoDescription = "Conoce LAB_CORE: péptidos de investigación con documentación analítica por lote, acceso a certificados de análisis y operación en Colombia.";
 const aboutSchema = {
   "@context": "https://schema.org",
   "@type": "AboutPage",
-  name: "About LAB_CORE",
+  name: "Acerca de LAB_CORE Colombia",
   description: seoDescription,
   url: canonicalURL,
   mainEntity: {
     "@type": "Organization",
     name: "LAB_CORE",
     url: siteUrl,
-    description: "Research compound supplier focused on US-origin products, batch traceability, and analytical documentation for laboratory research.",
+    description: "Proveedor de compuestos para investigación enfocado en trazabilidad por lote y documentación analítica para laboratorios en Colombia.",
     areaServed: ["United States", "Mexico", "Colombia"],
   },
 };

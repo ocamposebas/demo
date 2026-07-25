@@ -38,6 +38,24 @@ try {
 }
 ---
 
-<BaseLayout title="LAB_CORE // Research Peptides & Analytical Compounds">
+<BaseLayout
+  title="Péptidos de investigación en Colombia | LAB_CORE"
+  description="Catálogo de péptidos y compuestos para investigación de laboratorio en Colombia, con COA, análisis por lote y trazabilidad documental."
+  canonical="https://labcorepep.com/"
+  imageAlt="Péptidos de investigación LAB_CORE disponibles en Colombia"
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "@id": "https://labcorepep.com/#webpage",
+      url: "https://labcorepep.com/",
+      name: "Péptidos de investigación en Colombia | LAB_CORE",
+      description: "Catálogo de péptidos y compuestos para investigación de laboratorio en Colombia, con COA, análisis por lote y trazabilidad documental.",
+      inLanguage: "es-CO",
+      isPartOf: { "@id": "https://labcorepep.com/#website" },
+      about: { "@id": "https://labcorepep.com/#organization" },
+    })} />
+  </Fragment>
   <ShopExperience products={products} productError={productError} client:load />
 </BaseLayout>

@@ -7,16 +7,17 @@ import "../styles/global.css";
 
 const siteUrl = Astro.url.origin;
 const canonicalURL = new URL(Astro.url.pathname, siteUrl).toString();
-const seoTitle = "Peptide Information & Research Directory | LAB_CORE";
-const seoDescription = "A visual laboratory guide to peptide structure, synthesis, analytical quality, COA interpretation, and frequently researched peptides including BPC-157, MOTS-c, CJC-1295, and tesamorelin.";
+const seoTitle = "Qué son los péptidos: guía de investigación | LAB_CORE Colombia";
+const seoDescription = "Guía en español sobre estructura, síntesis, calidad analítica y lectura de COA de péptidos como BPC-157, MOTS-c, CJC-1295 y tesamorelina.";
 const guideSchema = {
   "@context": "https://schema.org",
   "@type": "Article",
-  headline: "LAB_CORE Peptide Information Guide",
+  headline: "Guía de péptidos para investigación de LAB_CORE Colombia",
   description: seoDescription,
   url: canonicalURL,
   author: { "@type": "Organization", name: "LAB_CORE" },
   publisher: { "@type": "Organization", name: "LAB_CORE" },
+  inLanguage: "es-CO",
   about: ["Peptide chemistry", "Peptide synthesis", "Certificates of Analysis", "HPLC", "LC-MS", "Research peptide directory", "Research quality"],
 };
 ---
