@@ -10,11 +10,6 @@ const {
   image = '/INICIO.png',
 } = Astro.props;
 
-/**
- * Convierte cualquier dominio configurado en la URL base del sitio.
- * Ejemplo:
- * https://labcore.com/producto -> https://labcore.com/
- */
 const toSiteBase = (value) => {
   if (!value) return null;
 

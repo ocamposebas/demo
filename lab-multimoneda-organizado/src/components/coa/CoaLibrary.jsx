@@ -9,18 +9,46 @@ export const coaText = {
 
 const norm = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const isCurrent = (record) => Boolean(record.currentShippingLot || record.activeShippingLot || record.currentCoa?.currentShippingLot);
-// Solo devuelve archivos PDF/directos. Nunca usa verifyUrl ni una página externa en el iframe.
-const pdfUrl = (record) =>
-  record.currentCoa?.fileUrl ||
-  record.fileUrl ||
-  record.currentCoa?.pdfUrl ||
-  record.pdfUrl ||
-  record.currentCoa?.coaPdfUrl ||
-  record.coaPdfUrl ||
-  "";
+const secureDocumentUrl = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw, typeof window === "undefined" ? "https://labcorepep.com" : window.location.origin);
+    // WordPress still returns some media links as HTTP. HTTPS pages block those
+    // links as mixed content and the embedded viewer appears completely blank.
+    if (url.protocol === "http:") url.protocol = "https:";
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+};
+
+const isDirectDocument = (value) => {
+  try {
+    return /\.pdf$/i.test(new URL(value).pathname);
+  } catch {
+    return false;
+  }
+};
+
+const pdfUrl = (record) => {
+  const candidates = [
+    record.currentCoa?.fileUrl,
+    record.fileUrl,
+    record.currentCoa?.pdfUrl,
+    record.pdfUrl,
+    record.currentCoa?.coaPdfUrl,
+    record.coaPdfUrl,
+    record.currentCoa?.verifyUrl,
+    record.verifyUrl,
+  ].map(secureDocumentUrl);
+
+  return candidates.find(isDirectDocument) || "";
+};
 
 const verificationUrl = (record) =>
-  record.currentCoa?.verifyUrl || record.verifyUrl || "";
+  secureDocumentUrl(record.currentCoa?.verifyUrl || record.verifyUrl);
 const productName = (record) => record.productName || record.compound || record.familyName || "COA";
 const searchBlob = (record) => norm([productName(record), record.compound, record.familyName, record.strength, record.batch, record.lot, record.coaNumber, ...(record.skus || []), ...(record.aliases || []), ...(record.keywords || [])].join(" "));
 
@@ -30,7 +58,7 @@ function Value({ label, value, tone = "text-white" }) {
 
 export function CoaViewer({ record, copy, language, onClose }) {
   const [view, setView] = useState("document");
-  // El iframe recibe exclusivamente el archivo PDF directo.
+  const [previewStatus, setPreviewStatus] = useState("loading");
   const file = pdfUrl(record);
   const external = file;
   const iframeSrc = file
@@ -38,6 +66,15 @@ export function CoaViewer({ record, copy, language, onClose }) {
     : "";
   const verification = verificationUrl(record);
   const spanish = language === "es";
+
+  useEffect(() => {
+    setPreviewStatus(file ? "loading" : "unavailable");
+    if (!file) return undefined;
+    const timer = window.setTimeout(() => {
+      setPreviewStatus((status) => status === "loading" ? "slow" : status);
+    }, 8000);
+    return () => window.clearTimeout(timer);
+  }, [file]);
 
   return (
     <div className="fixed inset-0 z-[200] bg-[#020617]/90 backdrop-blur-md" role="dialog" aria-modal="true">
@@ -60,13 +97,19 @@ export function CoaViewer({ record, copy, language, onClose }) {
         {view === "document" ? (
           <div className="flex min-h-0 flex-1 flex-col bg-[#020617]">
             {file ? (
-              <iframe
-                src={iframeSrc}
-                title={`COA ${record.coaNumber || record.id}`}
-                className="min-h-0 w-full flex-1 bg-white"
-                loading="eager"
-                allow="fullscreen"
-              />
+              <div className="relative min-h-0 flex-1 bg-slate-950">
+                {previewStatus === "loading" && <div className="absolute inset-0 flex items-center justify-center gap-3 font-mono text-[9px] uppercase tracking-[.14em] text-cyan-300"><LoaderCircle className="animate-spin" size={18} />{spanish ? "Cargando certificado" : "Loading certificate"}</div>}
+                {previewStatus === "slow" && <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#020617] px-6 text-center"><FileSearch size={34} className="text-amber-300" /><h3 className="mt-5 font-['Orbitron'] text-sm font-black uppercase text-white">{spanish ? "El visor integrado no respondió" : "The embedded viewer did not respond"}</h3><p className="mt-3 max-w-lg text-sm leading-6 text-slate-400">{spanish ? "El certificado está disponible. Ábrelo directamente para evitar bloqueos del navegador." : "The certificate is available. Open it directly to avoid browser restrictions."}</p><a href={external} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 bg-cyan-300 px-5 font-['Orbitron'] text-[8px] font-black uppercase tracking-[.1em] text-[#020617] hover:bg-white"><ExternalLink size={14} />{spanish ? "Abrir certificado" : "Open certificate"}</a></div>}
+                <iframe
+                  src={iframeSrc}
+                  title={`COA ${record.coaNumber || record.id}`}
+                  className="relative h-full min-h-0 w-full bg-white"
+                  loading="eager"
+                  allow="fullscreen"
+                  onLoad={() => setPreviewStatus("ready")}
+                  onError={() => setPreviewStatus("slow")}
+                />
+              </div>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center px-6 text-center"><FileSearch size={34} className="text-slate-600" /><h3 className="mt-5 font-['Orbitron'] text-sm font-black uppercase text-white">{spanish ? "Vista integrada no disponible" : "Embedded preview unavailable"}</h3><p className="mt-3 max-w-lg text-sm leading-6 text-slate-500">{spanish ? "Este registro todavía no tiene un archivo PDF directo asignado. Agrega el PDF en fileUrl para mostrarlo aquí." : "This record does not have a direct PDF file assigned yet. Add the PDF to fileUrl to display it here."}</p></div>
             )}

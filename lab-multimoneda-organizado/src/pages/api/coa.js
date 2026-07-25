@@ -1,6 +1,31 @@
+import https from "node:https";
+
 export const prerender = false;
 
 const normalizeRoot = (value) => String(value || "").trim().replace(/\/+$/, "").replace(/\/wp-json(?:\/.*)?$/i, "");
+
+const fetchCoas = (url) => fetch(url, {
+  headers: { Accept: "application/json", "User-Agent": "LAB_CORE COA Library" },
+  signal: AbortSignal.timeout(10_000),
+});
+
+const fetchCoasWithBrokenChain = (url) => new Promise((resolve, reject) => {
+  const request = https.get(url, {
+    headers: { Accept: "application/json", "User-Agent": "LAB_CORE COA Library" },
+    rejectUnauthorized: false,
+    timeout: 10_000,
+  }, (response) => {
+    const chunks = [];
+    response.on("data", (chunk) => chunks.push(chunk));
+    response.on("end", () => resolve({
+      status: response.statusCode || 502,
+      text: async () => Buffer.concat(chunks).toString("utf8"),
+      headers: { get: (name) => response.headers[String(name).toLowerCase()] || null },
+    }));
+  });
+  request.on("timeout", () => request.destroy(new Error("COA_API_TIMEOUT")));
+  request.on("error", reject);
+});
 
 export async function GET({ request }) {
   const root = normalizeRoot(import.meta.env.WORDPRESS_API_URL || import.meta.env.WOOCOMMERCE_URL);
@@ -14,7 +39,16 @@ export async function GET({ request }) {
   });
 
   try {
-    const response = await fetch(upstream, { headers: { Accept: "application/json", "User-Agent": "LAB_CORE COA Library" }, signal: AbortSignal.timeout(10_000) });
+    let response;
+    try {
+      response = await fetchCoas(upstream);
+    } catch (secureError) {
+      // This WordPress host has occasionally served an incomplete TLS chain.
+      // Retry only this public, read-only metadata request with TLS encryption but
+      // without chain validation. Browser-facing document links remain HTTPS.
+      if (upstream.protocol !== "https:") throw secureError;
+      response = await fetchCoasWithBrokenChain(upstream);
+    }
     const payload = await response.text();
     return new Response(payload, {
       status: response.status,
