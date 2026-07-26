@@ -25,7 +25,7 @@ const customProductOrder = [
     terms: ["korean glutathione 1200", "korean glutathione", "glutathione 1200", "glutathione", "gluta"],
   },
   { label: "Lipo-C/B12", terms: ["lipo c b12", "lipo-c/b12", "lipocb12", "lipo c", "lipo b12"] },
-  { label: "Fat Blaster", terms: ["fat blaster", "fatblaster"] },
+  { label: "Lipid Metabolism Blend", terms: ["fat blaster", "fatblaster"] },
   {
     label: "Hospira Bac Water",
     terms: [
