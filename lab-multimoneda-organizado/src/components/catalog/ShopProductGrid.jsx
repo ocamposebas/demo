@@ -95,27 +95,118 @@ export default function ShopProductGrid({ products, error }) {
   const productPrice = (product) => Number(getPriceData(product).price || 0);
 
   const getProductTerms = (product) => {
-    const categories = product.categories?.map((cat) => cat.name || cat.slug) || [];
-    const tags = product.tags?.map((tag) => tag.name || tag.slug) || [];
-    const attributes = product.attributes?.flatMap((attr) => [attr.name, ...(attr.options || [])]) || [];
-    return [...categories, ...tags, ...attributes].join(" ").toLowerCase();
+    const categories = product.categories?.flatMap((cat) => [cat.name, cat.slug]) || [];
+    const tags = product.tags?.flatMap((tag) => [tag.name, tag.slug]) || [];
+    const attributes = product.attributes?.flatMap((attr) => [attr.name, attr.slug, ...(attr.options || [])]) || [];
+    return [product.name, product.slug, product.sku, ...categories, ...tags, ...attributes]
+      .filter(Boolean)
+      .map(normalizeProductText)
+      .join(" ");
+  };
+
+  const filterAliases = {
+    vials: [
+      "vial",
+      "vials",
+      "vial type",
+      "tipo vial",
+      "peptide",
+      "peptido",
+      "klow",
+      "glow",
+      "tesa",
+      "nad plus",
+      "mots c",
+      "ghk cu",
+      "tirz",
+      "reta",
+    ],
+    capsules: ["capsule", "capsules", "caps", "capsula", "capsulas"],
+    liquids: [
+      "liquid",
+      "liquids",
+      "drop",
+      "drops",
+      "solution",
+      "liquido",
+      "liquidos",
+      "gotas",
+      "solucion",
+      "bac water",
+    ],
+    recovery: [
+      "recovery",
+      "cellular response",
+      "respuesta celular",
+      "recuperacion",
+      "growth",
+      "crecimiento",
+      "klow",
+      "glow",
+      "tesa",
+      "ghk cu",
+    ],
+    longevity: [
+      "longevity",
+      "cellular senescence",
+      "senescencia celular",
+      "anti aging",
+      "antiaging",
+      "envejecimiento",
+      "nad plus",
+      "mots c",
+    ],
+    cognitive: [
+      "cognitive",
+      "cognition",
+      "neurobiology",
+      "neurobiologia",
+      "brain",
+      "cerebro",
+      "focus",
+      "nad plus",
+    ],
+    metabolic: [
+      "metabolic",
+      "metabolism",
+      "bioenergetics",
+      "bioenergetica",
+      "mitochondrial",
+      "mitocondrial",
+      "reta",
+      "tirz",
+      "mots c",
+      "nad plus",
+      "tesa",
+    ],
+    "tissue-repair": [
+      "tissue repair",
+      "tissue-repair",
+      "extracellular matrix",
+      "matriz extracelular",
+      "regeneration",
+      "regeneracion",
+      "klow",
+      "glow",
+      "ghk cu",
+    ],
+    immune: [
+      "immune",
+      "immunology",
+      "immunobiology",
+      "inmunologia",
+      "inmunobiologia",
+      "inflammatory",
+      "inflammation",
+      "inflamacion",
+      "klow",
+    ],
   };
 
   const matchesTerm = (product, term) => {
     if (term === "all") return true;
-    const searchable = `${product.name || ""} ${getProductTerms(product)}`.toLowerCase();
-    const aliases = {
-      vials: ["vial", "vials", "bpc", "peptide"],
-      capsules: ["capsule", "capsules", "caps"],
-      liquids: ["liquid", "liquids", "drop", "solution"],
-      recovery: ["recovery", "repair", "bpc", "tb", "growth"],
-      longevity: ["longevity", "anti-aging", "age", "cellular"],
-      cognitive: ["cognitive", "neuro", "brain", "focus"],
-      metabolic: ["metabolic", "metabolism", "energy", "mitochondrial"],
-      "tissue-repair": ["tissue", "repair", "regeneration", "bpc", "tb"],
-      immune: ["immune", "inflammatory", "inflammation"],
-    };
-    return aliases[term]?.some((word) => searchable.includes(word)) || false;
+    const searchable = getProductTerms(product);
+    return filterAliases[term]?.some((alias) => productMatchesCustomTerm(searchable, alias)) || false;
   };
 
   const getCustomOrderIndex = (product) => {
@@ -130,7 +221,7 @@ export default function ShopProductGrid({ products, error }) {
 
   const filteredProducts = useMemo(() => {
     let result = (products || []).filter((product) => {
-      const matchesSearch = (product.name || "").toLowerCase().includes(query.toLowerCase());
+      const matchesSearch = getProductTerms(product).includes(normalizeProductText(query));
       return matchesSearch && matchesTerm(product, typeFilter) && matchesTerm(product, focusFilter);
     });
 
