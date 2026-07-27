@@ -29,7 +29,7 @@ const EXCLUDED_PATHS = [
 const copy = {
   es: {
     eyebrow: "LAB_REWARDS // BENEFICIO DE BIENVENIDA",
-    pointsTitle: "1 USD GASTADO = 1 PUNTO",
+    pointsTitle: "TUS COMPRAS EN COP ACUMULAN PUNTOS",
     pointsText: "Cada compra elegible impulsa tu saldo LAB_REWARDS.",
     discount: "10%",
     discountLabel: "DE DESCUENTO",

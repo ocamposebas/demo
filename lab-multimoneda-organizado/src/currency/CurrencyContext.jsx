@@ -10,6 +10,9 @@ export const CURRENCIES = {
 const COOKIE_NAME = "labcore_currency";
 const STORAGE_NAME = "labcore_currency";
 const CurrencyContext = createContext(null);
+// Lanzamiento Colombia: cambia a false para reactivar detección y selección multimoneda.
+export const COP_ONLY = true;
+const STOREFRONT_CURRENCY = "COP";
 
 const cleanCurrency = (value) => {
   const code = String(value || "").trim().toUpperCase();
@@ -119,6 +122,7 @@ export const getEntityPriceData = (entity, currency = "USD") => {
 export function CurrencyProvider({ children }) {
   const { setLanguage } = useLanguage();
   const initialCurrency = (() => {
+    if (COP_ONLY) return STOREFRONT_CURRENCY;
     if (typeof window === "undefined") return "USD";
     try {
       return cleanCurrency(window.localStorage.getItem(STORAGE_NAME)) || readCookie() || "USD";
@@ -129,10 +133,10 @@ export function CurrencyProvider({ children }) {
 
   const [currency, setCurrencyState] = useState(initialCurrency);
   const [ready, setReady] = useState(false);
-  const [source, setSource] = useState(initialCurrency !== "USD" || readCookie() ? "saved" : "default");
+  const [source, setSource] = useState(COP_ONLY ? "storefront-lock" : (initialCurrency !== "USD" || readCookie() ? "saved" : "default"));
 
   const setCurrency = useCallback((nextCurrency, options = {}) => {
-    const next = cleanCurrency(nextCurrency);
+    const next = COP_ONLY ? STOREFRONT_CURRENCY : cleanCurrency(nextCurrency);
     if (!next) return;
     setCurrencyState(next);
     writeCurrency(next);
@@ -143,6 +147,14 @@ export function CurrencyProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    if (COP_ONLY) {
+      setCurrencyState(STOREFRONT_CURRENCY);
+      writeCurrency(STOREFRONT_CURRENCY);
+      setSource("storefront-lock");
+      setReady(true);
+      return;
+    }
+
     let active = true;
     let saved = "";
     try {
@@ -189,7 +201,7 @@ export function CurrencyProvider({ children }) {
 
   useEffect(() => {
     if (!ready) return;
-    const nextLanguage = currency === "USD" ? "en" : "es";
+    const nextLanguage = COP_ONLY ? "es" : (currency === "USD" ? "en" : "es");
     setLanguage(nextLanguage);
     window.dispatchEvent(new CustomEvent("lab:language-change", {
       detail: { language: nextLanguage, currency },

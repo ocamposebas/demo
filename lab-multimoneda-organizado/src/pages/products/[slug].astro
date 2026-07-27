@@ -62,7 +62,7 @@ try {
     "cross_sell_ids",
     "upsell_ids",
   ].join(",");
-  const productUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&slug=${encodeURIComponent(slug)}&status=publish&_fields=${fields}`;
+  const productUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=COP&slug=${encodeURIComponent(slug)}&status=publish&_fields=${fields}`;
   const response = await fetch(productUrl, {
     signal: AbortSignal.timeout(8000),
     headers,
@@ -102,7 +102,7 @@ try {
       "attributes",
       "sku",
     ].join(",");
-    const featuredUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&exclude=${wooProduct.id}&per_page=100&orderby=date&order=desc&_fields=${featuredFields}`;
+    const featuredUrl = `${cleanUrl}/wp-json/wc/v3/products?currency=COP&status=publish&exclude=${wooProduct.id}&per_page=100&orderby=date&order=desc&_fields=${featuredFields}`;
     const featuredRequest = fetch(featuredUrl, {
       signal: AbortSignal.timeout(8000),
       headers,
@@ -124,7 +124,7 @@ try {
         "attributes",
         "sku",
       ].join(",");
-      const variationsUrl = `${cleanUrl}/wp-json/wc/v3/products/${wooProduct.id}/variations?currency=USD&per_page=100&_fields=${variationFields}`;
+      const variationsUrl = `${cleanUrl}/wp-json/wc/v3/products/${wooProduct.id}/variations?currency=COP&per_page=100&_fields=${variationFields}`;
       const variationsResponse = await fetch(variationsUrl, {
         signal: AbortSignal.timeout(8000),
         headers,
@@ -164,7 +164,7 @@ try {
       await Promise.all(recommendationCandidates.map(async (candidate) => {
         if (candidate.type !== "variable" || !candidate.variations?.length) return;
         const variationFields = ["id", "price", "regular_price", "sale_price", "labcore_multicurrency", "stock_status", "stock_quantity", "image", "attributes", "sku"].join(",");
-        const url = `${cleanUrl}/wp-json/wc/v3/products/${candidate.id}/variations?currency=USD&per_page=100&_fields=${variationFields}`;
+        const url = `${cleanUrl}/wp-json/wc/v3/products/${candidate.id}/variations?currency=COP&per_page=100&_fields=${variationFields}`;
         try {
           const variationResponse = await fetch(url, { signal: AbortSignal.timeout(8000), headers });
           if (variationResponse.ok) candidate.recommendation_variations = await variationResponse.json();
@@ -214,7 +214,7 @@ const productSchema = product
         variations.length > 0
           ? variations.map((variation) => ({
               "@type": "Offer",
-              priceCurrency: "USD",
+              priceCurrency: "COP",
               price: variation.price || product.price || "0.00",
               availability:
                 variation.stock_status === "instock"
@@ -225,7 +225,7 @@ const productSchema = product
             }))
           : {
               "@type": "Offer",
-              priceCurrency: "USD",
+              priceCurrency: "COP",
               price: product.price || "0.00",
               availability:
                 product.stock_status === "instock"

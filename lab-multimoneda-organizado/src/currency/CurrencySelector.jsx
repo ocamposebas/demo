@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Coins } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext.jsx";
-import { useCurrency } from "./CurrencyContext.jsx";
+import { COP_ONLY, useCurrency } from "./CurrencyContext.jsx";
 
 export default function CurrencySelector({ compact = false, mobile = false }) {
   const { language } = useLanguage();
@@ -11,6 +11,18 @@ export default function CurrencySelector({ compact = false, mobile = false }) {
   const active = currencies[currency];
   const currencyLabel = language === "es" ? "Moneda de la tienda" : "Store currency";
   const activeName = active.names?.[language] || active.name;
+
+  if (COP_ONLY) {
+    return (
+      <div
+        className={`flex items-center rounded-xl border border-cyan-300/15 bg-cyan-300/[0.055] px-3 text-cyan-100 ${mobile ? "min-h-12 w-full justify-center" : "h-10 gap-2"}`}
+        aria-label="Moneda de la tienda: COP, peso colombiano"
+      >
+        <span className="text-base leading-none" aria-hidden="true">{currencies.COP.flag}</span>
+        <span className="font-['Orbitron'] text-[10px] font-black uppercase tracking-[0.06em]">COP</span>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const close = (event) => {

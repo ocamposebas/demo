@@ -14,7 +14,7 @@ let productError = "";
 
 try {
   const cleanUrl = WOO_URL.replace(/\/$/, "");
-  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&per_page=100&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,categories,tags,attributes,short_description,sku,labcore_multicurrency`;
+  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=COP&status=publish&per_page=100&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,categories,tags,attributes,short_description,sku,labcore_multicurrency`;
 
   const token = Buffer.from(`${KEY}:${SECRET}`).toString("base64");
 
@@ -65,7 +65,7 @@ const jsonLdSchema = {
         "sku": product.sku || `LAB-${product.id}`,
         "offers": {
           "@type": "Offer",
-          "priceCurrency": "USD",
+          "priceCurrency": "COP",
           "price": product.price || "0.00",
           "availability": product.stock_status === "instock" ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
         }

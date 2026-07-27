@@ -674,6 +674,8 @@ const translations = {
 const LanguageContext = createContext(null);
 const STORAGE_NAME = "lab_language";
 const DEFAULT_LANGUAGE = "es";
+// Lanzamiento Colombia: cambia a false para reactivar la selección ES/EN.
+export const SPANISH_ONLY = true;
 
 const cleanLanguage = (value) => (value === "en" || value === "es" ? value : "");
 
@@ -682,6 +684,16 @@ export function LanguageProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (SPANISH_ONLY) {
+      setLanguageState("es");
+      document.documentElement.lang = "es";
+      try {
+        window.localStorage.setItem(STORAGE_NAME, "es");
+      } catch {}
+      setReady(true);
+      return;
+    }
+
     let saved = "";
     try {
       saved = cleanLanguage(window.localStorage.getItem(STORAGE_NAME));
@@ -703,11 +715,13 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     const syncLanguage = (event) => {
+      if (SPANISH_ONLY) return;
       if (event.key !== STORAGE_NAME) return;
       const nextLanguage = cleanLanguage(event.newValue);
       if (nextLanguage) setLanguageState(nextLanguage);
     };
     const syncLocalLanguage = (event) => {
+      if (SPANISH_ONLY) return;
       const nextLanguage = cleanLanguage(event.detail?.language);
       if (nextLanguage) setLanguageState(nextLanguage);
     };
@@ -720,6 +734,10 @@ export function LanguageProvider({ children }) {
   }, []);
 
   const setLanguage = useCallback((nextLanguage) => {
+    if (SPANISH_ONLY) {
+      setLanguageState("es");
+      return;
+    }
     const next = cleanLanguage(nextLanguage);
     if (next) setLanguageState(next);
   }, []);

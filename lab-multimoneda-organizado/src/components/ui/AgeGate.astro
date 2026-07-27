@@ -27,10 +27,8 @@
         <span>LAB_<b>CORE</b></span>
       </span>
 
-      <div class="lab-age-gate__languages" aria-label="Idioma / Language">
+      <div class="lab-age-gate__languages" aria-label="Idioma">
         <button type="button" data-age-language="es" aria-label="Ver en español">ES</button>
-        <span aria-hidden="true">/</span>
-        <button type="button" data-age-language="en" aria-label="View in English">EN</button>
       </div>
     </header>
 
@@ -271,8 +269,11 @@
     let isOpen = true;
     let registerBusy = false;
     let activeLanguage = "es";
+    // Lanzamiento Colombia: cambia a false para reactivar ES/EN en esta pantalla.
+    const spanishOnly = true;
 
     const getLanguage = () => {
+      if (spanishOnly) return "es";
       try {
         const saved = localStorage.getItem("lab_language");
         if (saved === "en" || saved === "es") return saved;
@@ -291,7 +292,7 @@
     };
 
     const applyLanguage = (nextLanguage = getLanguage(), notify = true) => {
-      const language = nextLanguage === "en" ? "en" : "es";
+      const language = spanishOnly ? "es" : (nextLanguage === "en" ? "en" : "es");
       activeLanguage = language;
       document.documentElement.lang = language;
       try { localStorage.setItem("lab_language", language); } catch {}

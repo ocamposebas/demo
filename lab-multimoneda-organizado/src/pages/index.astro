@@ -14,7 +14,7 @@ let productError = "";
 
 try {
   const cleanUrl = WOO_URL.replace(/\/$/, "");
-  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=USD&status=publish&per_page=20&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,labcore_multicurrency`;
+  const url = `${cleanUrl}/wp-json/wc/v3/products?currency=COP&status=publish&per_page=20&_fields=id,name,slug,type,variations,price,regular_price,sale_price,images,stock_status,labcore_multicurrency`;
 
   const token = Buffer.from(`${KEY}:${SECRET}`).toString("base64");
 
