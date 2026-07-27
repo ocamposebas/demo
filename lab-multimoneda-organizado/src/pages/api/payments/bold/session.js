@@ -164,7 +164,11 @@ export async function POST({ request }) {
   if (!customer) return reject("INVALID_CUSTOMER_DATA", 422);
   const omnisendCartId = normalizeCartId(payload?.cartId);
 
-  let couponCode = normalizeCouponCode(payload?.couponCode);
+  const couponCodes = [...new Set(
+    (Array.isArray(payload?.couponCodes) ? payload.couponCodes : [payload?.couponCode])
+      .map(normalizeCouponCode)
+      .filter(Boolean),
+  )].slice(0, 2);
 
   if (!Array.isArray(payload?.items) || payload.items.length < 1 || payload.items.length > MAX_LINES) {
     return reject("INVALID_CART", 422);
@@ -261,14 +265,14 @@ export async function POST({ request }) {
           subtotal: String(line.lineTotal),
           total: String(line.lineTotal),
         })),
-        coupon_lines: couponCode ? [{ code: couponCode }] : [],
+        coupon_lines: couponCodes.map((code) => ({ code })),
         fee_lines: reward?.discount > 0 ? [{ name: `LAB Points (${reward.points})`, total: String(-Number(reward.discount)), tax_status: "none" }] : [],
         meta_data: [
           { key: "_lab_legal_version", value: LEGAL_VERSION },
           { key: "_lab_research_agreement", value: "accepted" },
           { key: "_lab_checkout_language", value: cleanText(payload?.language, 2) === "en" ? "en" : "es" },
           { key: "_lab_checkout_currency", value: selectedCurrency },
-          { key: "_lab_coupon_code", value: couponCode },
+          { key: "_lab_coupon_code", value: couponCodes.join(",") },
           { key: "_bold_payment_status", value: "CREATED" },
           ...(omnisendCartId ? [{ key: "_lab_omnisend_cart_id", value: omnisendCartId }] : []),
           { key: "_lab_reward_points_redeemed", value: reward?.points || 0 },
@@ -282,7 +286,7 @@ export async function POST({ request }) {
     if (reward?.reservation) rewardsRequest(request, "release", { reservation: reward.reservation }).catch(() => {});
     console.error("Bold checkout order creation failed:", error.code || error.message);
 
-    const isCouponFailure = couponCode && (
+    const isCouponFailure = couponCodes.length > 0 && (
       String(error?.code || "").toLowerCase().includes("coupon") ||
       String(error?.details || "").toLowerCase().includes("coupon") ||
       String(error?.details || "").toLowerCase().includes("cupón")
@@ -319,14 +323,14 @@ export async function POST({ request }) {
     } catch {}
   };
 
-  if (couponCode) {
-    const returnedCoupon = Array.isArray(order?.coupon_lines)
-      ? order.coupon_lines.find(
-          (item) => normalizeCouponCode(item?.code) === couponCode,
-        )
-      : null;
+  if (couponCodes.length) {
+    const returnedCodes = new Set(
+      (Array.isArray(order?.coupon_lines) ? order.coupon_lines : [])
+        .map((item) => normalizeCouponCode(item?.code))
+        .filter(Boolean),
+    );
 
-    if (!returnedCoupon) {
+    if (couponCodes.some((code) => !returnedCodes.has(code))) {
       await cancelOrder("COUPON_NOT_APPLIED");
       return reject("COUPON_INVALID", 422);
     }
@@ -445,7 +449,8 @@ export async function POST({ request }) {
       reference,
       amount,
       currency,
-      couponCode: couponCode || null,
+      couponCode: couponCodes[0] || null,
+      couponCodes,
       discount: String(order?.discount_total || "0"),
       rewardPoints: reward?.points || 0,
       rewardDiscount: reward?.discount || 0,

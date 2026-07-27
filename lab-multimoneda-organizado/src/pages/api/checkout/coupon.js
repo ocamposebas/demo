@@ -37,6 +37,11 @@ function normalizeCouponCode(value) {
   return cleanText(value, 48).replace(/\s+/g, "").toUpperCase();
 }
 
+function normalizeCouponCodes(body) {
+  const source = Array.isArray(body?.codes) ? body.codes : [body?.code];
+  return [...new Set(source.map(normalizeCouponCode).filter(Boolean))].slice(0, 2);
+}
+
 function normalizeItems(items) {
   if (!Array.isArray(items) || items.length < 1 || items.length > MAX_LINES) return [];
 
@@ -200,12 +205,12 @@ export async function POST({ request }) {
   }
 
   const language = cleanText(body?.language, 2) === "en" ? "en" : "es";
-  const code = normalizeCouponCode(body?.code);
+  const codes = normalizeCouponCodes(body);
   const currency = cleanText(body?.currency, 3).toUpperCase();
   const email = cleanText(body?.email, 160).toLowerCase();
   const items = normalizeItems(body?.items);
 
-  if (!code) {
+  if (!codes.length) {
     return json(
       {
         valid: false,
@@ -265,20 +270,23 @@ export async function POST({ request }) {
       cartToken = result.cartToken;
     }
 
-    result = await storeRequest(`/cart/apply-coupon?code=${encodeURIComponent(code)}`, {
-      method: "POST",
-      cartToken,
-      currency,
-    });
+    for (const code of codes) {
+      result = await storeRequest(`/cart/apply-coupon?code=${encodeURIComponent(code)}`, {
+        method: "POST",
+        cartToken,
+        currency,
+      });
+      cartToken = result.cartToken;
+    }
 
     const cart = result.payload;
-    const appliedCoupon = Array.isArray(cart?.coupons)
-      ? cart.coupons.find(
-          (coupon) => normalizeCouponCode(coupon?.code) === code,
+    const appliedCoupons = Array.isArray(cart?.coupons)
+      ? codes.map((code) =>
+          cart.coupons.find((coupon) => normalizeCouponCode(coupon?.code) === code),
         )
-      : null;
+      : [];
 
-    if (!appliedCoupon) {
+    if (appliedCoupons.length !== codes.length || appliedCoupons.some((coupon) => !coupon)) {
       return json(
         {
           valid: false,
@@ -293,7 +301,7 @@ export async function POST({ request }) {
     }
 
     const totals = cart?.totals || {};
-    const couponTotals = appliedCoupon?.totals || {};
+    const couponTotals = appliedCoupons[0]?.totals || {};
     const minorUnit = Number(
       couponTotals?.currency_minor_unit ?? totals?.currency_minor_unit ?? 2,
     );
@@ -316,21 +324,25 @@ export async function POST({ request }) {
       );
     }
 
-    const discount = moneyFromMinorUnits(couponTotals?.total_discount, minorUnit);
+    const coupons = appliedCoupons.map((coupon) => ({
+      code: normalizeCouponCode(coupon?.code),
+      type: cleanText(coupon?.discount_type || coupon?.type, 40),
+      discount: moneyFromMinorUnits(coupon?.totals?.total_discount, minorUnit),
+    }));
+    const discount = coupons.reduce((sum, coupon) => sum + coupon.discount, 0);
     const total = moneyFromMinorUnits(totals?.total_price, minorUnit);
     const subtotal = moneyFromMinorUnits(totals?.total_items, minorUnit);
 
     return json({
       valid: true,
-      code,
+      code: codes[codes.length - 1],
+      codes,
       message:
         language === "es"
           ? "Cupón validado y aplicado por WooCommerce."
           : "Coupon validated and applied by WooCommerce.",
-      coupon: {
-        code: normalizeCouponCode(appliedCoupon?.code || code),
-        type: cleanText(appliedCoupon?.discount_type || appliedCoupon?.type, 40),
-      },
+      coupon: coupons[coupons.length - 1],
+      coupons,
       totals: {
         subtotal,
         discount,

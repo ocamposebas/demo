@@ -318,6 +318,8 @@ export default function Checkout() {
   const [couponState, setCouponState] = useState({
     status: "idle",
     code: "",
+    codes: [],
+    coupons: [],
     discount: 0,
     total: null,
     message: "",
@@ -354,6 +356,19 @@ export default function Checkout() {
       cartTotal > 0 ? Math.min(1, Math.max(0, totalBeforeRewards / cartTotal)) : 0;
     return Math.floor(productPoints * eligibleRatio);
   }, [cartItems, cartTotal, totalBeforeRewards]);
+  const projectedRewardBalance = Math.max(
+    0,
+    safeNumber(rewards.available) - safeNumber(rewards.selected) + orderRewardPoints,
+  );
+  const cashbackThreshold = Math.max(1, safeNumber(rewards.blockPoints, REWARD_BLOCK_POINTS));
+  const cashbackUnlocked = projectedRewardBalance >= cashbackThreshold;
+  const pointsToCashback = cashbackUnlocked
+    ? 0
+    : Math.max(0, cashbackThreshold - projectedRewardBalance);
+  const cashbackProgress = Math.min(
+    100,
+    Math.max(0, (projectedRewardBalance / cashbackThreshold) * 100),
+  );
 
   const formatPrice = (value) => formatMoney(safeNumber(value, 0));
 
@@ -503,26 +518,34 @@ export default function Checkout() {
   }, [cartSignature, currency, resetPreparedPayment]);
 
   const validateCoupon = useCallback(
-    async (rawCode, { silent = false } = {}) => {
+    async (rawCode, { silent = false, codesOverride = null } = {}) => {
       const code = normalizeCouponCode(rawCode);
+      const savedCodes = Array.isArray(codesOverride) ? codesOverride : couponState.codes;
+      const codes = [...new Set([...(savedCodes || []), code].filter(Boolean))].slice(0, 2);
 
-      if (!code) {
-        setCouponState({
+      if (!codes.length) {
+        setCouponState((current) => ({
+          ...current,
           status: "error",
-          code: "",
-          discount: 0,
-          total: null,
           message: language === "es" ? "Escribe un código de cupón." : "Enter a coupon code.",
-        });
+        }));
+        return false;
+      }
+
+      if (!silent && (savedCodes || []).length >= 2 && !(savedCodes || []).includes(code)) {
+        setCouponState((current) => ({
+          ...current,
+          status: "error",
+          message: language === "es" ? "Puedes combinar hasta dos cupones." : "You can combine up to two coupons.",
+        }));
         return false;
       }
 
       resetPreparedPayment();
-      setCouponInput(code);
       setCouponState((current) => ({
         ...current,
         status: "checking",
-        code,
+        codes,
         message: silent ? current.message : "",
       }));
 
@@ -531,12 +554,9 @@ export default function Checkout() {
         const response = await fetch("/api/checkout/coupon", {
           method: "POST",
           credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
           body: JSON.stringify({
-            code,
+            codes,
             currency,
             email,
             items: cartItems.map((item) => ({
@@ -549,52 +569,52 @@ export default function Checkout() {
 
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || payload?.valid !== true) {
-          throw new Error(
-            payload?.message ||
-              (language === "es"
-                ? "Este cupón no es válido para tu carrito."
-                : "This coupon is not valid for your cart."),
-          );
+          throw new Error(payload?.message || (language === "es"
+            ? "Uno de los cupones no es válido para tu carrito."
+            : "One of the coupons is not valid for your cart."));
         }
 
         const discount = safeNumber(payload?.totals?.discount ?? payload?.discount, 0);
-        const total = safeNumber(
-          payload?.totals?.total ?? payload?.total,
-          Math.max(0, cartTotal - discount),
-        );
-        const validatedCode = normalizeCouponCode(payload?.coupon?.code || payload?.code || code);
+        const total = safeNumber(payload?.totals?.total ?? payload?.total, Math.max(0, cartTotal - discount));
+        const coupons = (Array.isArray(payload?.coupons) ? payload.coupons : [payload?.coupon])
+          .filter(Boolean)
+          .map((coupon) => ({
+            code: normalizeCouponCode(coupon.code),
+            discount: safeNumber(coupon.discount, 0),
+          }));
+        const validatedCodes = coupons.map((coupon) => coupon.code).filter(Boolean);
 
         setCouponState({
           status: "applied",
-          code: validatedCode,
+          code: validatedCodes[validatedCodes.length - 1] || "",
+          codes: validatedCodes,
+          coupons,
           discount,
           total,
-          message:
-            payload?.message ||
-            (language === "es" ? "Cupón aplicado correctamente." : "Coupon applied successfully."),
+          message: language === "es"
+            ? `${validatedCodes.length === 1 ? "Cupón aplicado" : "Dos cupones aplicados"} correctamente.`
+            : `${validatedCodes.length === 1 ? "Coupon" : "Two coupons"} applied successfully.`,
         });
+        if (!silent) setCouponInput("");
         return true;
       } catch (error) {
-        setCouponState({
-          status: "error",
-          code,
-          discount: 0,
-          total: null,
-          message:
-            error?.message ||
-            (language === "es"
-              ? "No pudimos validar el cupón en WordPress."
-              : "We could not validate the coupon in WordPress."),
-        });
+        setCouponState((current) => ({
+          ...current,
+          status: current.codes?.length ? "applied" : "error",
+          codes: savedCodes || [],
+          message: error?.message || (language === "es"
+            ? "No pudimos validar los cupones en WordPress."
+            : "We could not validate the coupons in WordPress."),
+        }));
         return false;
       }
     },
-    [cartItems, cartTotal, currency, language, resetPreparedPayment],
+    [cartItems, cartTotal, couponState.codes, currency, language, resetPreparedPayment],
   );
 
   useEffect(() => {
-    if (couponState.status !== "applied" || !couponState.code) return;
-    validateCoupon(couponState.code, { silent: true });
+    if (couponState.status !== "applied" || !couponState.codes?.length) return;
+    validateCoupon(couponState.codes[0], { silent: true, codesOverride: couponState.codes });
     // Revalidate only when the cart or currency changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartSignature, currency]);
@@ -604,6 +624,8 @@ export default function Checkout() {
     setCouponState({
       status: "idle",
       code: "",
+      codes: [],
+      coupons: [],
       discount: 0,
       total: null,
       message: "",
@@ -763,7 +785,8 @@ export default function Checkout() {
           language,
           currency,
           cartId,
-          couponCode: appliedCoupon?.code || "",
+          couponCode: appliedCoupon?.codes?.[0] || appliedCoupon?.code || "",
+          couponCodes: appliedCoupon?.codes || (appliedCoupon?.code ? [appliedCoupon.code] : []),
           rewardPoints: rewards.selected || 0,
           legalVersion: LEGAL_VERSION,
           acceptedLegal: data.get("researchAgreement") === "on",
@@ -1391,17 +1414,7 @@ export default function Checkout() {
                         onChange={(event) => {
                           const nextCode = normalizeCouponCode(event.target.value);
                           setCouponInput(nextCode);
-
-                          if (couponState.status === "applied" && nextCode !== couponState.code) {
-                            setCouponState({
-                              status: "idle",
-                              code: "",
-                              discount: 0,
-                              total: null,
-                              message: "",
-                            });
-                            resetPreparedPayment();
-                          } else if (couponState.status === "error") {
+                          if (couponState.status === "error") {
                             setCouponState((current) => ({ ...current, status: "idle", message: "" }));
                           }
                         }}
@@ -1411,7 +1424,7 @@ export default function Checkout() {
                             validateCoupon(couponInput);
                           }
                         }}
-                        placeholder={language === "es" ? "CÓDIGO" : "CODE"}
+                        placeholder={language === "es" ? "CÓDIGO 1 O 2" : "CODE 1 OR 2"}
                         aria-label={language === "es" ? "Código de cupón" : "Coupon code"}
                         disabled={couponState.status === "checking"}
                         className="h-11 w-full rounded-xl border border-white/10 bg-[#020617] px-3 pr-9 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-white outline-none transition placeholder:text-slate-700 focus:border-cyan-300/45 disabled:opacity-60"
@@ -1419,8 +1432,8 @@ export default function Checkout() {
                       {couponInput && couponState.status !== "checking" && (
                         <button
                           type="button"
-                          onClick={removeCoupon}
-                          aria-label={language === "es" ? "Quitar cupón" : "Remove coupon"}
+                          onClick={() => setCouponInput("")}
+                          aria-label={language === "es" ? "Limpiar código" : "Clear code"}
                           className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg text-slate-600 hover:text-white"
                         >
                           <X size={12} />
@@ -1430,7 +1443,7 @@ export default function Checkout() {
                     <button
                       type="button"
                       onClick={() => validateCoupon(couponInput)}
-                      disabled={!couponInput || couponState.status === "checking"}
+                      disabled={!couponInput || couponState.status === "checking" || couponState.codes?.length >= 2}
                       className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 font-['Orbitron'] text-[7px] font-black uppercase tracking-[0.1em] text-[#020617] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       {couponState.status === "checking" ? (
@@ -1440,6 +1453,19 @@ export default function Checkout() {
                       )}
                     </button>
                   </div>
+
+                  {couponState.codes?.length > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      {couponState.codes.map((code) => (
+                        <span key={code} className="rounded-lg border border-emerald-300/20 bg-emerald-300/[0.05] px-2.5 py-1.5 font-mono text-[8px] font-bold text-emerald-200">
+                          {code}
+                        </span>
+                      ))}
+                      <button type="button" onClick={removeCoupon} className="font-mono text-[8px] uppercase text-slate-500 hover:text-white">
+                        {language === "es" ? "Quitar todos" : "Remove all"}
+                      </button>
+                    </div>
+                  )}
 
                   {couponState.message && (
                     <div
@@ -1519,6 +1545,36 @@ export default function Checkout() {
                         </div>
                       </div>
 
+                      <div className="mt-5 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.035] p-4">
+                        <p className="font-mono text-[8px] font-bold uppercase tracking-[0.11em] text-emerald-200/65">
+                          {language === "es" ? "PROGRESO AL CASHBACK" : "CASHBACK PROGRESS"}
+                        </p>
+                        <p className="mt-1.5 font-mono text-[10px] leading-5 text-slate-300">
+                          {cashbackUnlocked
+                            ? (language === "es"
+                              ? "Al completar esta orden tendrás la meta de cashback desbloqueada."
+                              : "After completing this order, your cashback goal will be unlocked.")
+                            : (language === "es"
+                              ? `Después de esta orden te faltarán ${formatRewardPoints(pointsToCashback)} puntos para llegar a la meta.`
+                              : `After this order, you will need ${formatRewardPoints(pointsToCashback)} points to reach the goal.`)}
+                        </p>
+
+                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#020617]" role="progressbar" aria-valuemin="0" aria-valuemax={cashbackThreshold} aria-valuenow={Math.min(projectedRewardBalance, cashbackThreshold)}>
+                          <span className="block h-full rounded-full bg-gradient-to-r from-blue-400 to-emerald-300 transition-[width] duration-500" style={{ width: `${cashbackProgress}%` }} />
+                        </div>
+
+                        <div className="mt-2.5 flex items-center justify-between gap-3 font-mono text-[8px] text-slate-500">
+                          <span>{formatRewardPoints(projectedRewardBalance)} / {formatRewardPoints(cashbackThreshold)} pts</span>
+                          <span className={cashbackUnlocked ? "font-bold text-emerald-300" : "text-blue-200"}>
+                            {cashbackUnlocked
+                              ? (language === "es" ? "CASHBACK DESBLOQUEADO" : "CASHBACK UNLOCKED")
+                              : (language === "es"
+                                ? `TE FALTARÁN ${formatRewardPoints(pointsToCashback)} PTS`
+                                : `${formatRewardPoints(pointsToCashback)} PTS REMAINING`)}
+                          </span>
+                        </div>
+                      </div>
+
                       {rewards.available >= rewards.blockPoints ? (
                         <label className="mt-5 block">
                           <span className="mb-2 block font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-blue-100/75">
@@ -1547,8 +1603,12 @@ export default function Checkout() {
                         <div className="mt-5 rounded-xl border border-white/[0.07] bg-[#020817] px-4 py-3.5">
                           <p className="font-mono text-[10px] leading-5 text-slate-400">
                             {language === "es"
-                              ? `Te faltan ${Math.max(0, rewards.blockPoints - rewards.available)} puntos para realizar tu primer canje.`
-                              : `You need ${Math.max(0, rewards.blockPoints - rewards.available)} more points for your first redemption.`}
+                              ? (cashbackUnlocked
+                                ? "Con los puntos de esta orden desbloquearás tu próximo cashback."
+                                : `Después de esta compra te faltarán ${formatRewardPoints(pointsToCashback)} puntos para desbloquear el cashback.`)
+                              : (cashbackUnlocked
+                                ? "The points from this order will unlock your next cashback."
+                                : `After this purchase, you will need ${formatRewardPoints(pointsToCashback)} more points to unlock cashback.`)}
                           </p>
                         </div>
                       )}
@@ -1574,28 +1634,30 @@ export default function Checkout() {
                 )}
 
                 <div className="mt-4 space-y-3 font-mono text-[9px]">
-                  <div className="flex items-center justify-between gap-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.045] px-3 py-3 text-emerald-200">
-                    <span className="flex items-center gap-2">
-                      <Coins size={13} />
-                      {language === "es" ? "Puntos que ganarás con esta orden" : "Points you will earn with this order"}
-                    </span>
-                    <strong className="font-['Orbitron'] text-[11px] text-emerald-300">
-                      + {formatRewardPoints(orderRewardPoints)}
-                    </strong>
-                  </div>
+                  {accountState.status !== "connected" && (
+                    <div className="flex items-center justify-between gap-4 rounded-xl border border-emerald-300/15 bg-emerald-300/[0.045] px-3 py-3 text-emerald-200">
+                      <span className="flex items-center gap-2">
+                        <Coins size={13} />
+                        {language === "es" ? "Puntos que ganarás con esta orden" : "Points you will earn with this order"}
+                      </span>
+                      <strong className="font-['Orbitron'] text-[11px] text-emerald-300">
+                        + {formatRewardPoints(orderRewardPoints)}
+                      </strong>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-4 text-slate-500">
                     <span>{t("checkout.subtotal")}</span>
                     <span className="text-slate-300">{formatPrice(cartTotal)}</span>
                   </div>
 
-                  {appliedCoupon && (
-                    <div className="flex justify-between gap-4 text-emerald-300">
+                  {appliedCoupon?.coupons?.map((coupon) => (
+                    <div key={coupon.code} className="flex justify-between gap-4 text-emerald-300">
                       <span className="flex items-center gap-1.5">
-                        <Tag size={11} /> {appliedCoupon.code}
+                        <Tag size={11} /> {coupon.code}
                       </span>
-                      <span>-{formatPrice(appliedCoupon.discount)}</span>
+                      <span>-{formatPrice(coupon.discount)}</span>
                     </div>
-                  )}
+                  ))}
 
                   {rewards.discount > 0 && (
                     <div className="flex justify-between gap-4 text-blue-300">

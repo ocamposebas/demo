@@ -10,6 +10,15 @@ class LAB_Core_Accounts_REST {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
 		add_filter( 'rest_post_dispatch', array( __CLASS__, 'disable_cache' ), 20, 3 );
 		add_filter( 'rest_pre_serve_request', array( __CLASS__, 'send_cors_headers' ), 20, 4 );
+		add_filter( 'woocommerce_coupon_get_individual_use', array( __CLASS__, 'allow_welcome_coupon_stacking' ), 10, 2 );
+	}
+
+	public static function allow_welcome_coupon_stacking( $individual_use, $coupon ) {
+		if ( $coupon instanceof WC_Coupon && $coupon->get_meta( '_lab_core_accounts_generated', true ) ) {
+			return false;
+		}
+
+		return $individual_use;
 	}
 
 	public static function register_routes() {
@@ -625,7 +634,8 @@ class LAB_Core_Accounts_REST {
 			$coupon->set_code( $code );
 			$coupon->set_discount_type( 'percent' );
 			$coupon->set_amount( $percent );
-			$coupon->set_individual_use( true );
+			// Account welcome coupons may be combined with the Omnisend welcome coupon.
+			$coupon->set_individual_use( false );
 			$coupon->set_usage_limit( 1 );
 			$coupon->set_usage_limit_per_user( 1 );
 			$coupon->set_email_restrictions( array( $email ) );

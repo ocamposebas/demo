@@ -3,7 +3,7 @@
  * Plugin Name: LAB_CORE Accounts
  * Plugin URI: https://labcore.co/
  * Description: Secure customer accounts, password recovery, WooCommerce order history and welcome discounts for the LAB_CORE storefront.
- * Version: 1.0.9
+ * Version: 1.0.10
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * WC requires at least: 8.0
@@ -12,7 +12,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'LAB_CORE_ACCOUNTS_VERSION', '1.0.9' );
+define( 'LAB_CORE_ACCOUNTS_VERSION', '1.0.10' );
 define( 'LAB_CORE_ACCOUNTS_DB_VERSION', '1.0.0' );
 define( 'LAB_CORE_ACCOUNTS_FILE', __FILE__ );
 define( 'LAB_CORE_ACCOUNTS_DIR', plugin_dir_path( __FILE__ ) );
